@@ -1,0 +1,19 @@
+{
+  "root": true,
+  "extends": "eslint:recommended",
+  "env": {
+    "browser": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 5,
+    "sourceType": "script"
+  },
+  "globals": {
+    "OpenSeadragon": false,
+    "DriftoryViewer": true
+  },
+  "rules": {
+    "no-unused-vars": 0,
+    "no-console": 0
+  }
+}

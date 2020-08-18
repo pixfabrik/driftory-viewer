@@ -1,0 +1,116 @@
+{
+  "comic": {
+    "creator": { "name": "Ian Gilman", "username": "iangilman" },
+    "body": {
+      "formatVersion": 1,
+      "backgroundColor": "#151515",
+      "fadeMode": false,
+      "items": [
+        {
+          "x": -1901.922810188734,
+          "y": -476.353123527212,
+          "width": 194,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/v_N8KxzRM812oGkbn2y6w1jV1BdNo0vwp7uv99oZA8pQGDM3yxhRevzEaoyWCuYzxxG9YS2tsPeyzBspGq0O6AcW.gif"
+        },
+        {
+          "x": -1608.8390548300997,
+          "y": -477.8131027502927,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/Rpv2B6aNPeeKIbAoOfoKhtWgtfvNcvdBdpL8n4cEQ7KycRhESXQpTZkWu2KGW8ZHvnsGVgX-9VMm7VLqJxD4fkI.gif"
+        },
+        {
+          "x": -1220.8252309405639,
+          "y": -477.6072185424673,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/HUkB7x5RnZp4QgrKo0u-CCCbBsuxLsNuzWcGI9oI_3epfJek-Wy7GgOpTUalST-s6oU7snRCmDOgp7au1LyuFvs-.gif"
+        },
+        {
+          "x": -832.5412136246613,
+          "y": -477.81249546316,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/mf1l7kZOk9WEa9mRJvFq9-WX1dqQQiGRaX8mHILN8lPIGFAk7KeR-KF85dmr4xypkmb9_uVkEZ8SkI4pgS3i3m0i.gif"
+        },
+        {
+          "x": -441.3370200761634,
+          "y": -478.55193496454314,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/J5No1_WMcVZRKzJyATCbipj3zVaEigxzaT-JU9lfNjWR88UHVJc4vWq2zaBouN-uJYyxZC4VP6r_sClILtmvzQDh1Q.gif"
+        },
+        {
+          "x": -54.10248698964982,
+          "y": -478.16738888152577,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/ZNAcnZr46KKfHGujSwBPHPoXf7_lFrUB8mm9dQGEk3DvFLppMp0NZSAWr4pUCrmfUXsk9f03XcVkzteA0C2lNRc.gif"
+        },
+        {
+          "x": -53.756231306506635,
+          "y": -198.06973018984826,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/CVtuodozhJNDARg6AXUfwwyThYBqvEs8y-AFgtbeXPercOsYTpdT-hv5TbCLdovpedbraq0uz3gtXOtcWtjAmdmj.gif"
+        },
+        {
+          "x": -53.43974766711673,
+          "y": 82.89594474505506,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/Z90rnlE8UrBWBil0r4IBCkVmhpkcRwaOlNn7sb5lO3eL_51wVDdYHBFkV6yOlq83I2NeoWXZUZZ8ZxnRk8Oprcmx.gif"
+        },
+        {
+          "x": -53.70310837087607,
+          "y": 366.81382626308925,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/hsdVnfp4aU7ldBt1DnlOiJ-WZ_s_Aac1FdJyDZ_Rn65xo9I7g2cT-xfJ4FqFDsnvv6OD6n7arfaUxaLJUEkjshI.gif"
+        },
+        {
+          "x": 337.66304193043686,
+          "y": 366.72216034519397,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/6E10voBmfGw6bZUzCEyM6Zuag1GT4zmQVKJ941Ugry7JsiumAPbvp0FEaw1FbXSA76PBbL1rfxHBFLV6qxTsp1Y.gif"
+        },
+        {
+          "x": 730.2965870937493,
+          "y": 365.6019586208201,
+          "width": 380,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/ja_utMBASiRbWgVw1Zf5nn8EgGmCzGf-872wTf5ninhhqcn5iKg4DwZJyb-cRF0v0Hn3pnwJamFmYJ8mWJK6ZeS_.gif"
+        },
+        {
+          "x": 1831.9073097505873,
+          "y": 364.9529641128782,
+          "width": 1800,
+          "height": 270,
+          "url": "https://s3.amazonaws.com/driftory/images/DyCzaZGdJQASCXjAi52P0KtjWS_HX1TEq33KOeaX-qYmMHHDsckD70zjs4pDvcDAlrXlB4j6RrSrkpeeJJzwy5OP.gif"
+        }
+      ],
+      "frames": [
+        { "x": -1901.922810188734, "y": -476.353123527212, "width": 194, "height": 270 },
+        { "x": -1608.8390548300997, "y": -477.8131027502927, "width": 380, "height": 270 },
+        { "x": -1220.8252309405639, "y": -477.6072185424673, "width": 380, "height": 270 },
+        { "x": -832.5412136246613, "y": -477.81249546316, "width": 380, "height": 270 },
+        { "x": -441.3370200761634, "y": -478.55193496454314, "width": 380, "height": 270 },
+        { "x": -54.10248698964982, "y": -478.16738888152577, "width": 380, "height": 270 },
+        { "x": -53.756231306506635, "y": -198.06973018984826, "width": 380, "height": 270 },
+        { "x": -53.43974766711673, "y": 82.89594474505506, "width": 380, "height": 270 },
+        { "x": -53.70310837087607, "y": 366.81382626308925, "width": 380, "height": 270 },
+        { "x": 337.66304193043686, "y": 366.72216034519397, "width": 380, "height": 270 },
+        { "x": 730.2965870937493, "y": 365.6019586208201, "width": 380, "height": 270 },
+        {
+          "x": 1318.5399008242866,
+          "y": 364.9517340721126,
+          "width": 777.9750498532284,
+          "height": 270
+        },
+        { "x": 2355.635743745406, "y": 369.1550860781882, "width": 747.080638717899, "height": 270 }
+      ]
+    }
+  }
+}
