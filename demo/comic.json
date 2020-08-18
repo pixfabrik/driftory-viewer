@@ -1,6 +1,6 @@
 {
   "comic": {
-    "creator": { "name": "Ian Gilman", "username": "iangilman" },
+    "creator": { "name": "Scott McCloud" },
     "body": {
       "formatVersion": 1,
       "backgroundColor": "#151515",
