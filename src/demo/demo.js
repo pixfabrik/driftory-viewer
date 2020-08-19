@@ -1,11 +1,12 @@
 import Driftory from '../library/driftory';
 
-var driftoryViewer, nextButton, previousButton;
+var nextButton, previousButton;
 
 // ----------
 function init() {
   var driftory = new Driftory({
-    container: document.querySelector('.driftory-viewer-container')
+    container: document.querySelector('.driftory-viewer-container'),
+    prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/'
   });
 
   nextButton = document.querySelector('.next-button');

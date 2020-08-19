@@ -1,36 +1,31 @@
-// ----------
-var component = (window.DriftoryViewer = function (args) {
-  this.container = args.container;
-  this.frameIndex = -1;
-  this.frames = [];
+const OpenSeadragon = window.OpenSeadragon;
 
-  this.viewer = window.OpenSeadragon({
-    element: args.container,
-    prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/',
-    showNavigationControl: false,
-    maxZoomPixelRatio: 10
-  });
-});
+export default class Driftory {
+  constructor({ container, prefixUrl }) {
+    this.container = container;
+    this.frameIndex = -1;
+    this.frames = [];
 
-// ----------
-component.prototype = {
-  // ----------
-  openComic: function (comic) {
-    var self = this;
+    this.viewer = OpenSeadragon({
+      element: container,
+      prefixUrl: prefixUrl,
+      showNavigationControl: false,
+      maxZoomPixelRatio: 10
+    });
+  }
 
+  openComic(comic) {
     this.container.style.backgroundColor = comic.body.backgroundColor;
     this.frames = comic.body.frames;
 
-    comic.body.items.forEach(function (item, i) {
+    comic.body.items.forEach((item, i) => {
       var success;
 
       if (i === 0) {
-        success = function () {
-          self.goToFrame(0);
-        };
+        success = () => this.goToFrame(0);
       }
 
-      self.viewer.addTiledImage({
+      this.viewer.addTiledImage({
         x: item.x - item.width / 2,
         y: item.y - item.height / 2,
         width: item.width,
@@ -47,10 +42,9 @@ component.prototype = {
         }
       });
     });
-  },
+  }
 
-  // ----------
-  goToFrame: function (index) {
+  goToFrame(index) {
     var frame = this.frames[index];
     var bufferFactor = 0.2;
     var box = new OpenSeadragon.Rect(
@@ -67,17 +61,13 @@ component.prototype = {
 
     this.viewer.viewport.fitBounds(box);
     this.frameIndex = index;
-  },
+  }
 
-  // ----------
-  getFrameIndex: function () {
+  getFrameIndex() {
     return this.frameIndex;
-  },
+  }
 
-  // ----------
-  getFrameCount: function () {
+  getFrameCount() {
     return this.frames.length;
   }
-};
-
-export default component;
+}
