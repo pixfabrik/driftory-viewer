@@ -53,7 +53,7 @@ task('js:npm-bundle', () => {
   return (
     rollup({
       // Point to the entry file
-      input: './src/library/driftory-viewer.js',
+      input: './src/library/driftory.js',
 
       // Apply plugins
       plugins: [commonjs(), nodeResolve()],
