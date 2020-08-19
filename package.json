@@ -1,6 +1,24 @@
 {
-  "name": "driftory-viewer",
-  "version": "0.0.1",
-  "dependencies": {
-  }
+  "name": "driftory",
+  "version": "0.1.0",
+  "description": "A viewer for comics created with https://www.driftory.com/",
+  "main": "src/driftory-viewer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixfabrik/driftory-viewer.git"
+  },
+  "keywords": [
+    "driftory",
+    "comic",
+    "gallery"
+  ],
+  "author": "Ian Gilman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pixfabrik/driftory-viewer/issues"
+  },
+  "homepage": "https://github.com/pixfabrik/driftory-viewer#readme"
 }
