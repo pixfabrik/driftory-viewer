@@ -23,7 +23,11 @@ task('js:demo-site', () => {
       input: './src/demo/demo.js',
 
       // Apply plugins
-      plugins: [babel({ babelHelpers: 'bundled', compact: false }), commonjs(), nodeResolve()],
+      plugins: [
+        babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
+        commonjs(),
+        nodeResolve()
+      ],
 
       // Use cache for better performance
       cache: cache,
@@ -56,7 +60,11 @@ task('js:npm-bundle', () => {
       input: './src/library/driftory.js',
 
       // Apply plugins
-      plugins: [commonjs(), nodeResolve()],
+      plugins: [
+        babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
+        commonjs(),
+        nodeResolve()
+      ],
 
       output: {
         // Output bundle is intended for use in both node and the browser
