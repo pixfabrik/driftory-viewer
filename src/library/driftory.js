@@ -1,7 +1,19 @@
-const OpenSeadragon = window.OpenSeadragon;
+import loadJs from './loadJs';
+
+let OpenSeadragon;
 
 export default class Driftory {
-  constructor({ container, prefixUrl }) {
+  constructor(args) {
+    loadJs(
+      'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
+      () => {
+        OpenSeadragon = window.OpenSeadragon;
+        this.initialize(args);
+      }
+    );
+  }
+
+  initialize({ container, prefixUrl }) {
     this.container = container;
     this.frameIndex = -1;
     this.frames = [];
