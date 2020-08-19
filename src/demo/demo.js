@@ -1,3 +1,5 @@
+import DriftoryViewer from '../library/driftory-viewer';
+
 var driftoryViewer, nextButton, previousButton;
 
 // ----------

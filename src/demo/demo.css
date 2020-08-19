@@ -1,0 +1,29 @@
+/* apply a natural box layout model to all elements, but allowing components to change */
+html {
+  box-sizing: border-box;
+}
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+}
+
+.driftory-viewer-container {
+  width: 100vw;
+  height: 100vh;
+  cursor: pointer;
+}
+
+.openseadragon-canvas:focus {
+  outline: none;
+}
+
+.button-bar {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+}

@@ -2,8 +2,11 @@
   "name": "driftory",
   "version": "0.1.0",
   "description": "A viewer for comics created with https://www.driftory.com/",
-  "main": "src/driftory-viewer.js",
+  "main": "index.js",
   "scripts": {
+    "start": "gulp demo-site",
+    "prepublish": "gulp js:npm-bundle",
+    "postpublish": "gulp clean:npm-bundle",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,5 +26,19 @@
   "homepage": "https://github.com/pixfabrik/driftory-viewer#readme",
   "dependencies": {
     "openseadragon": "^2.4.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.1",
+    "@rollup/plugin-babel": "^5.2.0",
+    "@rollup/plugin-commonjs": "^15.0.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
+    "@rollup/stream": "git+https://github.com/andremacola/stream.git",
+    "browser-sync": "^2.26.12",
+    "del": "^5.1.0",
+    "esm": "^3.2.25",
+    "gulp": "^4.0.2",
+    "rollup": "^2.26.4",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0"
   }
 }
