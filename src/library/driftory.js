@@ -1,4 +1,4 @@
-import loadJs from './loadJs';
+import loadJs from '@dan503/load-js';
 
 let OpenSeadragon;
 
