@@ -2,7 +2,9 @@
 html {
   box-sizing: border-box;
 }
-*, *:before, *:after {
+*,
+*:before,
+*:after {
   box-sizing: inherit;
 }
 
@@ -17,7 +19,7 @@ body {
 }
 
 .openseadragon-canvas:focus {
-	outline: none;
+  outline: none;
 }
 
 .button-bar {

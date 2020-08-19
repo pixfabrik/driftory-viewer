@@ -1,6 +1,6 @@
-(function() {
+(function () {
   // ----------
-  var component = (window.DriftoryViewer = function(args) {
+  var component = (window.DriftoryViewer = function (args) {
     this.container = args.container;
     this.frameIndex = -1;
     this.frames = [];
@@ -16,17 +16,17 @@
   // ----------
   component.prototype = {
     // ----------
-    openComic: function(comic) {
+    openComic: function (comic) {
       var self = this;
 
       this.container.style.backgroundColor = comic.body.backgroundColor;
       this.frames = comic.body.frames;
 
-      comic.body.items.forEach(function(item, i) {
+      comic.body.items.forEach(function (item, i) {
         var success;
 
         if (i === 0) {
-          success = function() {
+          success = function () {
             self.goToFrame(0);
           };
         }
@@ -51,7 +51,7 @@
     },
 
     // ----------
-    goToFrame: function(index) {
+    goToFrame: function (index) {
       var frame = this.frames[index];
       var bufferFactor = 0.2;
       var box = new OpenSeadragon.Rect(
@@ -71,12 +71,12 @@
     },
 
     // ----------
-    getFrameIndex: function() {
+    getFrameIndex: function () {
       return this.frameIndex;
     },
 
     // ----------
-    getFrameCount: function() {
+    getFrameCount: function () {
       return this.frames.length;
     }
   };
