@@ -1,5 +1,5 @@
 {
-  "name": "driftory",
+  "name": "@driftory/viewer",
   "version": "0.1.0",
   "description": "A viewer for comics created with https://www.driftory.com/",
   "main": "index.js",
