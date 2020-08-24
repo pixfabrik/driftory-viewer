@@ -1,0 +1,33 @@
+/* apply a natural box layout model to all elements, but allowing components to change */
+html {
+  /* 1rem = 10px making font size calculations easier */
+  font-size: 62.5%;
+}
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  /* Reset default font size back to 16px by default */
+  font-size: 1.6rem;
+}
+
+.driftory-viewer-container {
+  width: 100vw;
+  height: 100vh;
+  cursor: pointer;
+}
+
+.openseadragon-canvas:focus {
+  outline: none;
+}
+
+.button-bar {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+}
