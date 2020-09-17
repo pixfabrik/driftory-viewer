@@ -62,6 +62,23 @@ export default class Driftory {
         this.goToFrame(foundIndex);
       }
     });
+
+    window.addEventListener('keydown', event => {
+      if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === ' ') {
+        this.goToNextFrame();
+      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        this.goToPreviousFrame();
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    });
   }
 
   openComic(comic) {
