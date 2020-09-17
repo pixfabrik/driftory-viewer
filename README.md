@@ -2,6 +2,10 @@
 
 Pre-alpha!
 
+## Demo
+
+https://pixfabrik.com/driftory-viewer/
+
 ## Running
 
 You will need [node.js](https://nodejs.org/en/) installed if you don't have it installed already.
