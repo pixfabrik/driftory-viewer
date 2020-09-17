@@ -10,21 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const previousButton = document.querySelector('.previous-button');
 
   nextButton.addEventListener('click', () => {
-    let index = driftory.getFrameIndex();
-    index = (index + 1) % driftory.getFrameCount();
-    // TO DO: we need a built in driftory.goToNextFrame() method
-    driftory.goToFrame(index);
+    driftory.goToNextFrame();
   });
 
   previousButton.addEventListener('click', () => {
-    let index = driftory.getFrameIndex();
-    index = index === 0 ? driftory.getFrameCount() - 1 : index - 1;
-    // TO DO: we need a built in driftory.goToPrevFrame() method
-    driftory.goToFrame(index);
+    driftory.goToPreviousFrame();
   });
 
   fetch('comic.json')
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         console.error(response);
         throw new Error('Failed to load comic.json');
@@ -32,9 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return response.json();
     })
-    .then((json) => {
+    .then(json => {
       // console.log(json);
       driftory.openComic(json.comic);
     })
-    .catch((error) => console.error(error));
+    .catch(error => console.error(error));
 });

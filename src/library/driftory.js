@@ -10,7 +10,6 @@ const osdPromise = new Promise((resolve, reject) => {
 export default class Driftory {
   constructor(args) {
     this.container = args.container;
-    this.frameIndex = -1;
     this.frames = [];
 
     // TODO: Make this more robust so it handles multiple viewers being created at the same time.
@@ -34,7 +33,34 @@ export default class Driftory {
       element: container,
       prefixUrl: prefixUrl,
       showNavigationControl: false,
-      maxZoomPixelRatio: 10
+      maxZoomPixelRatio: 10,
+      gestureSettingsMouse: {
+        clickToZoom: false,
+        scrollToZoom: false
+      }
+    });
+
+    this.viewer.addHandler('canvas-click', event => {
+      if (!event.quick) {
+        return;
+      }
+
+      const point = this.viewer.viewport.pointFromPixel(event.position);
+      let foundIndex = -1;
+      const itemCount = this.viewer.world.getItemCount();
+      for (let i = 0; i < itemCount; i++) {
+        const item = this.viewer.world.getItemAt(i);
+        if (item.getBounds().containsPoint(point)) {
+          foundIndex = i;
+        }
+      }
+
+      const frameIndex = this.getFrameIndex();
+      if (foundIndex === frameIndex || foundIndex === -1) {
+        this.goToNextFrame();
+      } else {
+        this.goToFrame(foundIndex);
+      }
     });
   }
 
@@ -86,14 +112,43 @@ export default class Driftory {
     box.y -= frame.height * bufferFactor * 0.5;
 
     this.viewer.viewport.fitBounds(box);
-    this.frameIndex = index;
   }
 
   getFrameIndex() {
-    return this.frameIndex;
+    let bestIndex = -1;
+    let bestDistance = Infinity;
+    const viewportBounds = this.viewer.viewport.getBounds();
+    const viewportCenter = viewportBounds.getCenter();
+
+    const itemCount = this.viewer.world.getItemCount();
+    for (let i = 0; i < itemCount; i++) {
+      const item = this.viewer.world.getItemAt(i);
+      const itemBounds = item.getBounds();
+      const distance = viewportCenter.squaredDistanceTo(itemBounds.getCenter());
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    }
+
+    return bestIndex;
   }
 
   getFrameCount() {
     return this.frames.length;
+  }
+
+  goToNextFrame() {
+    let index = this.getFrameIndex();
+    if (index < this.frames.length - 1) {
+      this.goToFrame(index + 1);
+    }
+  }
+
+  goToPreviousFrame() {
+    let index = this.getFrameIndex();
+    if (index > 0) {
+      this.goToFrame(index - 1);
+    }
   }
 }
