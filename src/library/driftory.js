@@ -1,23 +1,35 @@
 import loadJs from '@dan503/load-js';
 
 let OpenSeadragon;
+let osdRequest;
+
+const osdPromise = new Promise((resolve, reject) => {
+  osdRequest = { resolve, reject };
+});
 
 export default class Driftory {
   constructor(args) {
-    loadJs(
-      'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
-      () => {
-        OpenSeadragon = window.OpenSeadragon;
-        this.initialize(args);
-      }
-    );
-  }
-
-  initialize({ container, prefixUrl }) {
-    this.container = container;
+    this.container = args.container;
     this.frameIndex = -1;
     this.frames = [];
 
+    // TODO: Make this more robust so it handles multiple viewers being created at the same time.
+    // Right now they would both load OSD since they would start before the other finished.
+    if (OpenSeadragon) {
+      this.initialize(args);
+    } else {
+      loadJs(
+        'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
+        () => {
+          OpenSeadragon = window.OpenSeadragon;
+          this.initialize(args);
+          osdRequest.resolve();
+        }
+      );
+    }
+  }
+
+  initialize({ container, prefixUrl }) {
     this.viewer = OpenSeadragon({
       element: container,
       prefixUrl: prefixUrl,
@@ -27,31 +39,33 @@ export default class Driftory {
   }
 
   openComic(comic) {
-    this.container.style.backgroundColor = comic.body.backgroundColor;
-    this.frames = comic.body.frames;
+    osdPromise.then(() => {
+      this.container.style.backgroundColor = comic.body.backgroundColor;
+      this.frames = comic.body.frames;
 
-    comic.body.items.forEach((item, i) => {
-      var success;
+      comic.body.items.forEach((item, i) => {
+        var success;
 
-      if (i === 0) {
-        success = () => this.goToFrame(0);
-      }
-
-      this.viewer.addTiledImage({
-        x: item.x - item.width / 2,
-        y: item.y - item.height / 2,
-        width: item.width,
-        success: success,
-        tileSource: {
-          type: 'legacy-image-pyramid',
-          levels: [
-            {
-              url: item.url,
-              width: item.width,
-              height: item.height
-            }
-          ]
+        if (i === 0) {
+          success = () => this.goToFrame(0);
         }
+
+        this.viewer.addTiledImage({
+          x: item.x - item.width / 2,
+          y: item.y - item.height / 2,
+          width: item.width,
+          success: success,
+          tileSource: {
+            type: 'legacy-image-pyramid',
+            levels: [
+              {
+                url: item.url,
+                width: item.width,
+                height: item.height
+              }
+            ]
+          }
+        });
       });
     });
   }
