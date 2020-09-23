@@ -40,8 +40,7 @@ export default class Driftory {
       showNavigationControl: false,
       maxZoomPixelRatio: 10,
       gestureSettingsMouse: {
-        clickToZoom: false,
-        scrollToZoom: false
+        clickToZoom: false
       }
     });
 
@@ -85,15 +84,21 @@ export default class Driftory {
       }
     });
 
-    this.viewer.addHandler('canvas-scroll', event => {
-      // TODO: Stop the browser window from scrolling; this doesn't seem to do it.
-      event.originalEvent.preventDefault();
-      event.originalEvent.stopPropagation();
+    const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
+    this.viewer.innerTracker.scrollHandler = event => {
+      if (
+        event.originalEvent.ctrlKey ||
+        event.originalEvent.altKey ||
+        event.originalEvent.metaKey
+      ) {
+        return originalScrollHandler.call(this.viewer.innerTracker, event);
+      }
 
       const now = Date.now();
       // console.log(event.scroll, now, now - this.lastScrollTime);
       if (now - this.lastScrollTime < this.scrollDelay) {
-        return;
+        // Returning false stops the browser from scrolling itself.
+        return false;
       }
 
       this.lastScrollTime = now;
@@ -102,7 +107,10 @@ export default class Driftory {
       } else {
         this.goToPreviousFrame();
       }
-    });
+
+      // Returning false stops the browser from scrolling itself.
+      return false;
+    };
 
     window.addEventListener('keydown', event => {
       if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
