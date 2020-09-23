@@ -10,7 +10,10 @@ const osdPromise = new Promise((resolve, reject) => {
 export default class Driftory {
   constructor(args) {
     this.container = args.container;
+    this.onFrameChange = args.onFrameChange;
+    this.onComicLoad = args.onComicLoad;
     this.frames = [];
+    this.frameIndex = -1;
 
     // TODO: Make this more robust so it handles multiple viewers being created at the same time.
     // Right now they would both load OSD since they would start before the other finished.
@@ -40,6 +43,17 @@ export default class Driftory {
       }
     });
 
+    // TODO: Maybe don't need to do this every frame.
+    this.viewer.addHandler('animation', () => {
+      const frameIndex = this.figureFrameIndex();
+      if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
+        this.frameIndex = frameIndex;
+        if (this.onFrameChange) {
+          this.onFrameChange({ frameIndex, isLastFrame: frameIndex === this.getFrameCount() - 1 });
+        }
+      }
+    });
+
     this.viewer.addHandler('canvas-click', event => {
       if (!event.quick) {
         return;
@@ -55,8 +69,14 @@ export default class Driftory {
         }
       }
 
-      const frameIndex = this.getFrameIndex();
-      if (foundIndex === frameIndex || foundIndex === -1) {
+      if (foundIndex === -1) {
+        const realFrameIndex = this.figureFrameIndex();
+        if (realFrameIndex === -1) {
+          this.goToFrame(this.frameIndex);
+        } else {
+          this.goToNextFrame();
+        }
+      } else if (foundIndex === this.frameIndex) {
         this.goToNextFrame();
       } else {
         this.goToFrame(foundIndex);
@@ -84,7 +104,26 @@ export default class Driftory {
   openComic(comic) {
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
-      this.frames = comic.body.frames;
+
+      if (comic.body.frames) {
+        this.frames = comic.body.frames.map(frame => {
+          return new OpenSeadragon.Rect(
+            frame.x - frame.width / 2,
+            frame.y - frame.height / 2,
+            frame.width,
+            frame.height
+          );
+        });
+      } else {
+        this.frames = comic.body.items.map(item => {
+          return new OpenSeadragon.Rect(
+            item.x - item.width / 2,
+            item.y - item.height / 2,
+            item.width,
+            item.height
+          );
+        });
+      }
 
       comic.body.items.forEach((item, i) => {
         var success;
@@ -110,18 +149,17 @@ export default class Driftory {
           }
         });
       });
+
+      if (this.onComicLoad) {
+        this.onComicLoad({});
+      }
     });
   }
 
   goToFrame(index) {
     var frame = this.frames[index];
     var bufferFactor = 0.2;
-    var box = new OpenSeadragon.Rect(
-      frame.x - frame.width / 2,
-      frame.y - frame.height / 2,
-      frame.width,
-      frame.height
-    );
+    var box = frame.clone();
 
     box.width *= 1 + bufferFactor;
     box.height *= 1 + bufferFactor;
@@ -132,19 +170,23 @@ export default class Driftory {
   }
 
   getFrameIndex() {
+    return this.frameIndex;
+  }
+
+  figureFrameIndex() {
     let bestIndex = -1;
     let bestDistance = Infinity;
-    const viewportBounds = this.viewer.viewport.getBounds();
+    const viewportBounds = this.viewer.viewport.getBounds(true);
     const viewportCenter = viewportBounds.getCenter();
 
-    const itemCount = this.viewer.world.getItemCount();
-    for (let i = 0; i < itemCount; i++) {
-      const item = this.viewer.world.getItemAt(i);
-      const itemBounds = item.getBounds();
-      const distance = viewportCenter.squaredDistanceTo(itemBounds.getCenter());
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = i;
+    for (let i = 0; i < this.frames.length; i++) {
+      const frame = this.frames[i];
+      if (frame.containsPoint(viewportCenter)) {
+        const distance = viewportCenter.squaredDistanceTo(frame.getCenter());
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = i;
+        }
       }
     }
 

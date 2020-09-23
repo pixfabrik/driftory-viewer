@@ -31,3 +31,9 @@ body {
   left: 10px;
   top: 10px;
 }
+
+.frame-info {
+  display: inline-block;
+  margin-left: 20px;
+  color: white;
+}
