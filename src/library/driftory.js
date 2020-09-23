@@ -14,6 +14,8 @@ export default class Driftory {
     this.onComicLoad = args.onComicLoad;
     this.frames = [];
     this.frameIndex = -1;
+    this.lastScrollTime = 0;
+    this.scrollDelay = 2000;
 
     // TODO: Make this more robust so it handles multiple viewers being created at the same time.
     // Right now they would both load OSD since they would start before the other finished.
@@ -80,6 +82,25 @@ export default class Driftory {
         this.goToNextFrame();
       } else {
         this.goToFrame(foundIndex);
+      }
+    });
+
+    this.viewer.addHandler('canvas-scroll', event => {
+      // TODO: Stop the browser window from scrolling; this doesn't seem to do it.
+      event.originalEvent.preventDefault();
+      event.originalEvent.stopPropagation();
+
+      const now = Date.now();
+      // console.log(event.scroll, now, now - this.lastScrollTime);
+      if (now - this.lastScrollTime < this.scrollDelay) {
+        return;
+      }
+
+      this.lastScrollTime = now;
+      if (event.scroll < 0) {
+        this.goToNextFrame();
+      } else {
+        this.goToPreviousFrame();
       }
     });
 
