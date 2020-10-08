@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "strict": true,
+    "target": "es5",
+    "module": "commonjs",
+    "declaration": true,
+    "lib": ["ESNext", "dom", "ES6"],
+    "baseUrl": "../node_modules"
+  },
+  "include": ["src/**/*.ts", "gulpfile.ts", "gulp-tasks/**/*.ts"],
+  "exclude": ["./node_modules"]
+}

@@ -13,8 +13,11 @@
     "OpenSeadragon": false,
     "Promise": false
   },
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "no-console": "off",
-    "no-unused-vars": "warn"
+    "no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }

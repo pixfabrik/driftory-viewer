@@ -14,7 +14,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 
 // Cache needs to be initialized outside of the Gulp task
-let cache = null;
+let cache: any = null;
 
 task('js:demo-site', () => {
   return (
