@@ -25,7 +25,8 @@
   },
   "homepage": "https://github.com/pixfabrik/driftory-viewer#readme",
   "dependencies": {
-    "@dan503/load-js": "^1.0.1",
+    "@dan503/load-js": "^1.0.2",
+    "@types/openseadragon": "^2.4.5",
     "openseadragon": "^2.4.2"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "@rollup/plugin-babel": "^5.2.0",
     "@rollup/plugin-commonjs": "^15.0.0",
     "@rollup/plugin-node-resolve": "^9.0.0",
+    "@rollup/plugin-typescript": "^6.0.0",
     "@rollup/stream": "git+https://github.com/andremacola/stream.git",
     "@types/browser-sync": "^2.26.1",
     "@types/gulp": "^4.0.7",

@@ -13,6 +13,9 @@ import commonjs from '@rollup/plugin-commonjs';
 // Add support for importing from node_modules folder like import x from 'module-name'
 import nodeResolve from '@rollup/plugin-node-resolve';
 
+// Add TypeScript support
+import TypeScript from '@rollup/plugin-typescript';
+
 // Cache needs to be initialized outside of the Gulp task
 let cache: any = null;
 
@@ -20,13 +23,14 @@ task('js:demo-site', () => {
   return (
     rollup({
       // Point to the entry file
-      input: './src/demo/demo.js',
+      input: './src/demo/demo.ts',
 
       // Apply plugins
       plugins: [
+        TypeScript(),
         babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
         commonjs(),
-        nodeResolve()
+        nodeResolve(),
       ],
 
       // Use cache for better performance
@@ -57,13 +61,16 @@ task('js:npm-bundle', () => {
   return (
     rollup({
       // Point to the entry file
-      input: './src/library/driftory.js',
+      input: './src/library/driftory.ts',
 
       // Apply plugins
       plugins: [
+        TypeScript({
+          "include": ["src/library/**/*.ts"],
+        }),
         babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
         commonjs(),
-        nodeResolve()
+        nodeResolve(),
       ],
 
       output: {
@@ -75,7 +82,7 @@ task('js:npm-bundle', () => {
         name: 'Driftory',
 
         // Show source code when debugging in browser
-        sourcemap: true
+        sourcemap: false
       }
     })
       // Name of the output file.
