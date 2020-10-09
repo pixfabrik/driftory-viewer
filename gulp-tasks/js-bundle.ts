@@ -4,7 +4,7 @@ import TypeScript from 'gulp-typescript'
 var tsDemoSiteProject = TypeScript.createProject({
   outFile: 'demo.js',
   target: 'es5',
-  module: 'system',
+  module: 'amd',
   moduleResolution: 'node'
 });
 
