@@ -1,104 +1,28 @@
-import { task, dest } from 'gulp';
-import source from 'vinyl-source-stream';
-import buffer from 'vinyl-buffer';
-import rollup from '@rollup/stream';
+import { task, dest, src } from 'gulp';
+import TypeScript from 'gulp-typescript'
 
-// *Optional* Depends on what JS features you want vs what browsers you need to support
-// *Not needed* for basic ES6 module import syntax support
-import babel from '@rollup/plugin-babel';
+var tsDemoSiteProject = TypeScript.createProject({
+  outFile: 'demo.js',
+  target: 'es5',
+  module: 'system',
+  moduleResolution: 'node'
+});
 
-// Add support for require() syntax
-import commonjs from '@rollup/plugin-commonjs';
+var tsNpmProject = TypeScript.createProject({
+  target: 'es5',
+  module: 'commonjs',
+  declaration: true,
+  moduleResolution: 'node',
+});
 
-// Add support for importing from node_modules folder like import x from 'module-name'
-import nodeResolve from '@rollup/plugin-node-resolve';
-
-// Add TypeScript support
-import TypeScript from '@rollup/plugin-typescript';
-
-// Cache needs to be initialized outside of the Gulp task
-let cache: any = null;
-
-task('js:demo-site', () => {
-  return (
-    rollup({
-      // Point to the entry file
-      input: './src/demo/demo.ts',
-
-      // Apply plugins
-      plugins: [
-        TypeScript({
-          esModuleInterop: false,
-          module: 'ESNext',
-          include: './src/**/*.ts'
-        }),
-        babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
-        commonjs(),
-        nodeResolve(),
-      ],
-
-      // Use cache for better performance
-      cache: cache,
-      output: {
-        // Output bundle is intended for use in browsers
-        // (iife = immediately invoked function expression)
-        format: 'iife',
-
-        // Show source code when debugging in browser
-        sourcemap: true
-      }
-    })
-      .on('bundle', (bundle) => {
-        // Update cache data after every bundle is created
-        cache = bundle;
-      })
-      // Name of the output file.
-      .pipe(source('demo.js'))
-      .pipe(buffer())
-
-      // Where to send the output file
-      .pipe(dest('./docs'))
-  );
+task('js:demo-site', function () {
+  return src('src/demo/demo.ts')
+    .pipe(tsDemoSiteProject())
+    .pipe(dest('docs'));
 });
 
 task('js:npm-bundle', () => {
-  return (
-    rollup({
-      // Point to the entry file
-      input: './src/library/driftory.ts',
-
-      // Apply plugins
-      plugins: [
-        TypeScript({
-          include: ["src/library/**/*.ts"],
-          outDir: './',
-          declaration: true,
-          module: "commonjs"
-        }),
-        babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
-        commonjs(),
-        nodeResolve(),
-      ],
-
-      output: {
-        // Output bundle is intended for use in both node and the browser
-        // (umd = Universal Module Definition)
-        format: 'commonJS',
-
-        dir: './',
-
-        // Determines the global variable name when imported into browsers directly
-        name: 'Driftory',
-
-        // Show source code when debugging in browser
-        sourcemap: false
-      }
-    })
-      // Name of the output file.
-      .pipe(source('index.js'))
-      .pipe(buffer())
-
-      // Where to send the output file
-      .pipe(dest('.'))
-  );
+  return src('src/library/driftory.ts')
+    .pipe(tsNpmProject())
+    .pipe(dest('src/library'));
 });

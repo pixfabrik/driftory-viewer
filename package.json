@@ -2,7 +2,7 @@
   "name": "@driftory/viewer",
   "version": "0.1.2",
   "description": "A viewer for comics created with https://www.driftory.com/",
-  "main": "index.js",
+  "main": "./src/library/driftory.js",
   "scripts": {
     "start": "gulp demo-site",
     "prepublish": "gulp js:npm-bundle",
@@ -46,6 +46,7 @@
     "browser-sync": "^2.26.12",
     "del": "^5.1.0",
     "gulp": "^4.0.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
     "rollup": "^2.26.4",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.3",
