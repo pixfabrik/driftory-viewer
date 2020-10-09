@@ -27,7 +27,11 @@ task('js:demo-site', () => {
 
       // Apply plugins
       plugins: [
-        TypeScript(),
+        TypeScript({
+          esModuleInterop: false,
+          module: 'ESNext',
+          include: './src/**/*.ts'
+        }),
         babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
         commonjs(),
         nodeResolve(),
@@ -66,7 +70,10 @@ task('js:npm-bundle', () => {
       // Apply plugins
       plugins: [
         TypeScript({
-          "include": ["src/library/**/*.ts"],
+          include: ["src/library/**/*.ts"],
+          outDir: './',
+          declaration: true,
+          module: "commonjs"
         }),
         babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
         commonjs(),
@@ -76,7 +83,9 @@ task('js:npm-bundle', () => {
       output: {
         // Output bundle is intended for use in both node and the browser
         // (umd = Universal Module Definition)
-        format: 'umd',
+        format: 'commonJS',
+
+        dir: './',
 
         // Determines the global variable name when imported into browsers directly
         name: 'Driftory',
