@@ -1019,6 +1019,12 @@ declare namespace OpenSeadragon {
 		viewport: Viewport;
 		world: World;
 		referenceStrip: ReferenceStrip;
+		innerTracker: {
+			scrollHandler: (event: {
+				originalEvent: MouseEvent
+				scroll: number
+			}) => void
+		}
 
 		constructor(options: Options);
 		_cancelPendingImages(): void;
@@ -1344,6 +1350,9 @@ declare namespace OpenSeadragon {
 }
 
 // Custom type needed for importing types data without having to import the actual JS
-export type OpenSeadragonType = (options: OpenSeadragon.Options) => OpenSeadragon.Viewer;
+export interface OpenSeadragonType {
+	(options: OpenSeadragon.Options): OpenSeadragon.Viewer
+	Rect: typeof OpenSeadragon.Rect
+};
 
 export type ViewerType = OpenSeadragon.Viewer
