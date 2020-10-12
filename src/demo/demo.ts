@@ -11,21 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
     onComicLoad: () => {
       console.log('loaded!');
     },
-    onFrameChange: ({ frameIndex, isLastFrame }) => {
-      let text = `Frame ${frameIndex + 1}`;
-      if (isLastFrame) {
-        text += ' (last frame!)';
-      }
+    onFrameChange: ({ frameIndex = 0, isLastFrame }) => {
+      if (frameInfo) {
+        let text = `Frame ${frameIndex + 1}`;
+        if (isLastFrame) {
+          text += ' (last frame!)';
+        }
 
-      frameInfo.textContent = text;
+        frameInfo.textContent = text;
+      }
     }
   });
 
-  nextButton.addEventListener('click', () => {
+  nextButton?.addEventListener('click', () => {
     driftory.goToNextFrame();
   });
 
-  previousButton.addEventListener('click', () => {
+  previousButton?.addEventListener('click', () => {
     driftory.goToPreviousFrame();
   });
 
