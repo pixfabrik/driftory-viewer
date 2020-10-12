@@ -1,10 +1,10 @@
 import loadJs from '@dan503/load-js';
 import { Comic } from '../../Comic.types';
-import { OpenSeadragonType, ViewerType } from './openseadragon.types'
+import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
-  resolve: (value?: unknown) => void
-  reject: (reason?: any) => void
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
 }
 
 let OpenSeadragon: OpenSeadragonType | undefined;
@@ -12,7 +12,7 @@ let osdRequest: OsdRequest | undefined;
 
 declare global {
   interface Window {
-    OpenSeadragon: OpenSeadragonType
+    OpenSeadragon: OpenSeadragonType;
   }
 }
 
@@ -20,59 +20,57 @@ const osdPromise = new Promise((resolve, reject) => {
   osdRequest = { resolve, reject };
 });
 
-type Frame = any
-type Container = any
-type OnFrameChange = (params: { frameIndex?: number, isLastFrame: boolean }) => void
-type OnComicLoad = (params: {}) => void
+type Frame = any;
+type Container = any;
+type OnFrameChange = (params: { frameIndex?: number; isLastFrame: boolean }) => void;
+type OnComicLoad = (params: {}) => void;
 
 interface DriftoryArguments {
-  container: any,
-  onFrameChange: OnFrameChange,
-  onComicLoad: OnComicLoad
-  prefixUrl: string
+  container: any;
+  onFrameChange: OnFrameChange;
+  onComicLoad: OnComicLoad;
+  prefixUrl: string;
 }
 
 export default class Driftory {
-  container: Container
-  onFrameChange: OnFrameChange
-  onComicLoad: OnComicLoad
-  frames: Array<Frame> = []
-  frameIndex?: number = -1
-  lastScrollTime: number = 0
-  scrollDelay: number = 2000
-  viewer?: ViewerType
+  container: Container;
+  onFrameChange: OnFrameChange;
+  onComicLoad: OnComicLoad;
+  frames: Array<Frame> = [];
+  frameIndex?: number = -1;
+  lastScrollTime: number = 0;
+  scrollDelay: number = 2000;
+  viewer?: ViewerType;
 
   constructor(args: DriftoryArguments) {
     this.container = args.container;
     this.onFrameChange = args.onFrameChange;
     this.onComicLoad = args.onComicLoad;
 
-    // TODO: Make this more robust so it handles multiple viewers being created at the same time.
-    // Right now they would both load OSD since they would start before the other finished.
-    if (OpenSeadragon) {
-      this.initialize(args);
-    } else {
-      loadJs(
-        'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
-        () => {
-          OpenSeadragon = window.OpenSeadragon;
-          this.initialize(args);
-          osdRequest?.resolve();
-        }
-      );
-    }
+    // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+    // all of the callbacks are called.
+    loadJs(
+      'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
+      () => {
+        OpenSeadragon = window.OpenSeadragon;
+        this.initialize(args);
+        osdRequest?.resolve();
+      }
+    );
   }
 
   initialize({ container, prefixUrl }: DriftoryArguments) {
-    this.viewer = OpenSeadragon && OpenSeadragon({
-      element: container,
-      prefixUrl: prefixUrl,
-      showNavigationControl: false,
-      maxZoomPixelRatio: 10,
-      gestureSettingsMouse: {
-        clickToZoom: false
-      }
-    });
+    this.viewer =
+      OpenSeadragon &&
+      OpenSeadragon({
+        element: container,
+        prefixUrl: prefixUrl,
+        showNavigationControl: false,
+        maxZoomPixelRatio: 10,
+        gestureSettingsMouse: {
+          clickToZoom: false
+        }
+      });
 
     if (this.viewer) {
       // TODO: Maybe don't need to do this every frame.
@@ -81,12 +79,15 @@ export default class Driftory {
         if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
           this.frameIndex = frameIndex;
           if (this.onFrameChange) {
-            this.onFrameChange({ frameIndex, isLastFrame: frameIndex === this.getFrameCount() - 1 });
+            this.onFrameChange({
+              frameIndex,
+              isLastFrame: frameIndex === this.getFrameCount() - 1
+            });
           }
         }
       });
 
-      this.viewer.addHandler('canvas-click', (event) => {
+      this.viewer.addHandler('canvas-click', event => {
         if (!event || !event.quick || !event.position || !this.viewer) {
           return;
         }
@@ -170,20 +171,26 @@ export default class Driftory {
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map(frame => {
-            return OpenSeadragon && new OpenSeadragon.Rect(
-              frame.x - frame.width / 2,
-              frame.y - frame.height / 2,
-              frame.width,
-              frame.height
+            return (
+              OpenSeadragon &&
+              new OpenSeadragon.Rect(
+                frame.x - frame.width / 2,
+                frame.y - frame.height / 2,
+                frame.width,
+                frame.height
+              )
             );
           });
         } else {
           this.frames = comic.body.items.map(item => {
-            return OpenSeadragon && new OpenSeadragon.Rect(
-              item.x - item.width / 2,
-              item.y - item.height / 2,
-              item.width,
-              item.height
+            return (
+              OpenSeadragon &&
+              new OpenSeadragon.Rect(
+                item.x - item.width / 2,
+                item.y - item.height / 2,
+                item.width,
+                item.height
+              )
             );
           });
         }
@@ -216,9 +223,7 @@ export default class Driftory {
         if (this.onComicLoad) {
           this.onComicLoad({});
         }
-
       }
-
     });
   }
 

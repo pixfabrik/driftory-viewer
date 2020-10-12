@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
         .catch(function (error) { return console.error(error); });
 });
+
 },{"../library/driftory":3}],3:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -100,31 +101,28 @@ var Driftory = /** @class */ (function () {
         this.container = args.container;
         this.onFrameChange = args.onFrameChange;
         this.onComicLoad = args.onComicLoad;
-        // TODO: Make this more robust so it handles multiple viewers being created at the same time.
-        // Right now they would both load OSD since they would start before the other finished.
-        if (OpenSeadragon) {
-            this.initialize(args);
-        }
-        else {
-            load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
-                OpenSeadragon = window.OpenSeadragon;
-                _this.initialize(args);
-                osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
-            });
-        }
+        // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+        // all of the callbacks are called.
+        load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
+            OpenSeadragon = window.OpenSeadragon;
+            _this.initialize(args);
+            osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
+        });
     }
     Driftory.prototype.initialize = function (_a) {
         var _this = this;
         var container = _a.container, prefixUrl = _a.prefixUrl;
-        this.viewer = OpenSeadragon && OpenSeadragon({
-            element: container,
-            prefixUrl: prefixUrl,
-            showNavigationControl: false,
-            maxZoomPixelRatio: 10,
-            gestureSettingsMouse: {
-                clickToZoom: false
-            }
-        });
+        this.viewer =
+            OpenSeadragon &&
+                OpenSeadragon({
+                    element: container,
+                    prefixUrl: prefixUrl,
+                    showNavigationControl: false,
+                    maxZoomPixelRatio: 10,
+                    gestureSettingsMouse: {
+                        clickToZoom: false
+                    }
+                });
         if (this.viewer) {
             // TODO: Maybe don't need to do this every frame.
             this.viewer.addHandler('animation', function () {
@@ -132,7 +130,10 @@ var Driftory = /** @class */ (function () {
                 if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
                     _this.frameIndex = frameIndex;
                     if (_this.onFrameChange) {
-                        _this.onFrameChange({ frameIndex: frameIndex, isLastFrame: frameIndex === _this.getFrameCount() - 1 });
+                        _this.onFrameChange({
+                            frameIndex: frameIndex,
+                            isLastFrame: frameIndex === _this.getFrameCount() - 1
+                        });
                     }
                 }
             });
@@ -214,12 +215,14 @@ var Driftory = /** @class */ (function () {
             if (_this.viewer) {
                 if (comic.body.frames) {
                     _this.frames = comic.body.frames.map(function (frame) {
-                        return OpenSeadragon && new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height);
+                        return (OpenSeadragon &&
+                            new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height));
                     });
                 }
                 else {
                     _this.frames = comic.body.items.map(function (item) {
-                        return OpenSeadragon && new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height);
+                        return (OpenSeadragon &&
+                            new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height));
                     });
                 }
                 comic.body.items.forEach(function (item, i) {
@@ -302,6 +305,7 @@ var Driftory = /** @class */ (function () {
     return Driftory;
 }());
 exports.default = Driftory;
+
 },{"@dan503/load-js":1}]},{},[2])
 
 //# sourceMappingURL=demo.js.map
