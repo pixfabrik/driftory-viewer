@@ -1,5 +1,5 @@
 import loadJs from '@dan503/load-js';
-import { Comic } from '../../Comic.types';
+import { Comic } from './Comic.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
@@ -47,20 +47,16 @@ export default class Driftory {
     this.onFrameChange = args.onFrameChange;
     this.onComicLoad = args.onComicLoad;
 
-    // TODO: Make this more robust so it handles multiple viewers being created at the same time.
-    // Right now they would both load OSD since they would start before the other finished.
-    if (OpenSeadragon) {
-      this.initialize(args);
-    } else {
-      loadJs(
-        'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
-        () => {
-          OpenSeadragon = window.OpenSeadragon;
-          this.initialize(args);
-          osdRequest?.resolve();
-        }
-      );
-    }
+    // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+    // all of the callbacks are called.
+    loadJs(
+      'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
+      () => {
+        OpenSeadragon = window.OpenSeadragon;
+        this.initialize(args);
+        osdRequest?.resolve();
+      }
+    );
   }
 
   initialize({ container, prefixUrl }: DriftoryArguments) {

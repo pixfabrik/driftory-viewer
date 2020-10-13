@@ -100,18 +100,13 @@ var Driftory = /** @class */ (function () {
         this.container = args.container;
         this.onFrameChange = args.onFrameChange;
         this.onComicLoad = args.onComicLoad;
-        // TODO: Make this more robust so it handles multiple viewers being created at the same time.
-        // Right now they would both load OSD since they would start before the other finished.
-        if (OpenSeadragon) {
-            this.initialize(args);
-        }
-        else {
-            load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
-                OpenSeadragon = window.OpenSeadragon;
-                _this.initialize(args);
-                osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
-            });
-        }
+        // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+        // all of the callbacks are called.
+        load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
+            OpenSeadragon = window.OpenSeadragon;
+            _this.initialize(args);
+            osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
+        });
     }
     Driftory.prototype.initialize = function (_a) {
         var _this = this;

@@ -15,4 +15,4 @@ task(
   )
 );
 
-task('npm-bundle', parallel('js:npm-bundle'));
+task('npm-bundle', parallel('copy:library', 'js:npm-bundle'));
