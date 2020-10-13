@@ -5,7 +5,7 @@
   "main": "./dist/driftory.js",
   "scripts": {
     "start": "gulp demo-site",
-    "prepublish": "gulp js:npm-bundle",
+    "prepublish": "gulp npm-bundle",
     "postpublish": "gulp clean:npm-bundle",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
