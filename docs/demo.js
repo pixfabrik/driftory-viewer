@@ -78,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function () {
     })
         .catch(function (error) { return console.error(error); });
 });
-
 },{"../library/driftory":3}],3:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -305,7 +304,6 @@ var Driftory = /** @class */ (function () {
     return Driftory;
 }());
 exports.default = Driftory;
-
 },{"@dan503/load-js":1}]},{},[2])
 
 //# sourceMappingURL=demo.js.map
