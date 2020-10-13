@@ -1,4 +1,4 @@
-import { task, } from 'gulp';
+import { task } from 'gulp';
 import { create } from 'browser-sync';
 
 // Create a new browserSync instance
