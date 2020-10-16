@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   fetch('comic.json')
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         console.error(response);
         throw new Error('Failed to load comic.json');
@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return response.json();
     })
-    .then((json) => {
+    .then(json => {
       // console.log(json);
       driftory.openComic(json.comic);
     })
-    .catch((error) => console.error(error));
+    .catch(error => console.error(error));
 });
