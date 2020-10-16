@@ -39,7 +39,7 @@ export default class Driftory {
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
   frames: Array<Frame> = [];
-  frameIndex?: number = -1;
+  frameIndex: number = -1;
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
@@ -169,6 +169,7 @@ export default class Driftory {
   openComic(unsafeComic: Comic | string) {
     const { comic } =
       typeof unsafeComic === 'string' ? (JSON.parse(unsafeComic) as Comic) : unsafeComic;
+
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
 
@@ -253,7 +254,7 @@ export default class Driftory {
   }
 
   figureFrameIndex() {
-    let bestIndex = 0;
+    let bestIndex = -1;
     let bestDistance = Infinity;
     if (this.viewer) {
       const viewportBounds = this.viewer.viewport.getBounds(true);
@@ -279,14 +280,14 @@ export default class Driftory {
 
   goToNextFrame() {
     let index = this.getFrameIndex();
-    if (index !== undefined && index < this.frames.length - 1) {
+    if (index < this.frames.length - 1) {
       this.goToFrame(index + 1);
     }
   }
 
   goToPreviousFrame() {
     let index = this.getFrameIndex();
-    if (index !== undefined && index > 0) {
+    if (index > 0) {
       this.goToFrame(index - 1);
     }
   }
