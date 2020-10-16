@@ -1,5 +1,7 @@
 import loadJs from '@dan503/load-js';
 import { Comic } from './Comic.types';
+export * from './Comic.types'
+export * from './openseadragon.types'
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
@@ -22,14 +24,14 @@ const osdPromise = new Promise((resolve, reject) => {
 
 type Frame = any;
 type Container = any;
-type OnFrameChange = (params: { frameIndex?: number; isLastFrame: boolean }) => void;
+type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
 
 interface DriftoryArguments {
-  container: any;
-  onFrameChange: OnFrameChange;
-  onComicLoad: OnComicLoad;
-  prefixUrl: string;
+  container: HTMLElement;
+  onFrameChange?: OnFrameChange;
+  onComicLoad?: OnComicLoad;
+  prefixUrl?: string;
 }
 
 export default class Driftory {
@@ -44,8 +46,8 @@ export default class Driftory {
 
   constructor(args: DriftoryArguments) {
     this.container = args.container;
-    this.onFrameChange = args.onFrameChange;
-    this.onComicLoad = args.onComicLoad;
+    this.onFrameChange = args.onFrameChange || function () { };
+    this.onComicLoad = args.onComicLoad || function () { };
 
     // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
     // all of the callbacks are called.
@@ -164,7 +166,8 @@ export default class Driftory {
     }
   }
 
-  openComic(comic: Comic) {
+  openComic(unsafeComic: Comic | string) {
+    const { comic } = typeof unsafeComic === "string" ? JSON.parse(unsafeComic) as Comic : unsafeComic
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
 
@@ -228,16 +231,20 @@ export default class Driftory {
   }
 
   goToFrame(index: number) {
-    var frame = this.frames[index];
-    var bufferFactor = 0.2;
-    var box = frame.clone();
+    if (this.getFrameIndex() !== index) {
+      var frame = this.frames[index];
+      var bufferFactor = 0.2;
+      if (frame) {
+        var box = frame.clone();
 
-    box.width *= 1 + bufferFactor;
-    box.height *= 1 + bufferFactor;
-    box.x -= frame.width * bufferFactor * 0.5;
-    box.y -= frame.height * bufferFactor * 0.5;
+        box.width *= 1 + bufferFactor;
+        box.height *= 1 + bufferFactor;
+        box.x -= frame.width * bufferFactor * 0.5;
+        box.y -= frame.height * bufferFactor * 0.5;
 
-    this.viewer?.viewport.fitBounds(box);
+        this.viewer?.viewport.fitBounds(box);
+      }
+    }
   }
 
   getFrameIndex() {
@@ -245,7 +252,7 @@ export default class Driftory {
   }
 
   figureFrameIndex() {
-    let bestIndex = -1;
+    let bestIndex = 0;
     let bestDistance = Infinity;
     if (this.viewer) {
       const viewportBounds = this.viewer.viewport.getBounds(true);
@@ -261,9 +268,8 @@ export default class Driftory {
           }
         }
       }
-
-      return bestIndex;
     }
+    return bestIndex;
   }
 
   getFrameCount() {
