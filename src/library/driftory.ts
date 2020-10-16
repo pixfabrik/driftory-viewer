@@ -89,7 +89,7 @@ export default class Driftory {
         }
       });
 
-      this.viewer.addHandler('canvas-click', event => {
+      this.viewer.addHandler('canvas-click', (event) => {
         if (!event || !event.quick || !event.position || !this.viewer) {
           return;
         }
@@ -120,7 +120,7 @@ export default class Driftory {
       });
 
       const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
-      this.viewer.innerTracker.scrollHandler = event => {
+      this.viewer.innerTracker.scrollHandler = (event) => {
         if (
           event.originalEvent.ctrlKey ||
           event.originalEvent.altKey ||
@@ -147,7 +147,7 @@ export default class Driftory {
         return false;
       };
 
-      window.addEventListener('keydown', event => {
+      window.addEventListener('keydown', (event) => {
         if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
           return;
         }
@@ -173,7 +173,7 @@ export default class Driftory {
 
       if (this.viewer) {
         if (comic.body.frames) {
-          this.frames = comic.body.frames.map(frame => {
+          this.frames = comic.body.frames.map((frame) => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(
@@ -185,7 +185,7 @@ export default class Driftory {
             );
           });
         } else {
-          this.frames = comic.body.items.map(item => {
+          this.frames = comic.body.items.map((item) => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(

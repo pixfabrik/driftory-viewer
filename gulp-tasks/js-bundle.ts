@@ -50,7 +50,5 @@ var tsNpmProject = TypeScript.createProject({
 });
 
 task('js:npm-bundle', () => {
-  return src('src/library/driftory.ts')
-    .pipe(tsNpmProject())
-    .pipe(dest('dist'));
+  return src('src/library/driftory.ts').pipe(tsNpmProject()).pipe(dest('dist'));
 });

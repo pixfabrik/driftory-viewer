@@ -6,4 +6,4 @@ task('copy:demo-site', () => {
 
 task('copy:library', () => {
   return src(['src/library/**/*.types.ts']).pipe(dest('./dist'));
-})
+});

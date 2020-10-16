@@ -5,6 +5,7 @@
   "main": "./dist/driftory.js",
   "scripts": {
     "start": "gulp demo-site",
+    "prettier": "prettier --write **/*.ts",
     "prepublish": "gulp npm-bundle",
     "postpublish": "gulp clean:npm-bundle",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -47,6 +48,8 @@
     "gulp": "^4.0.2",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-typescript": "^6.0.0-alpha.1",
+    "prettier": "^2.1.2",
+    "prettier-cli": "^0.1.0",
     "rollup": "^2.26.4",
     "ts-node": "^9.0.0",
     "tsify": "^5.0.2",
