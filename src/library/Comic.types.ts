@@ -1,6 +1,8 @@
 export interface Comic {
-	creator: Creator,
-	body: Body
+	comic: {
+		creator: Creator,
+		body: Body
+	}
 }
 
 export interface Creator {
