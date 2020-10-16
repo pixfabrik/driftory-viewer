@@ -1,12 +1,14 @@
 import Driftory from '../library/driftory';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const nextButton = document.querySelector('.next-button');
+  const container = document.querySelector('.driftory-viewer-container');
+  const startButton = document.querySelector('.start-button');
   const previousButton = document.querySelector('.previous-button');
+  const nextButton = document.querySelector('.next-button');
   const frameInfo = document.querySelector('.frame-info');
 
   const driftory = new Driftory({
-    container: document.querySelector('.driftory-viewer-container'),
+    container,
     prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/',
     onComicLoad: () => {
       console.log('loaded!');
@@ -23,16 +25,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  nextButton?.addEventListener('click', () => {
-    driftory.goToNextFrame();
+  startButton?.addEventListener('click', () => {
+    driftory.goToFrame(0);
   });
 
   previousButton?.addEventListener('click', () => {
     driftory.goToPreviousFrame();
   });
 
+  nextButton?.addEventListener('click', () => {
+    driftory.goToNextFrame();
+  });
+
   fetch('comic.json')
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         console.error(response);
         throw new Error('Failed to load comic.json');
@@ -40,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return response.json();
     })
-    .then((json) => {
+    .then(json => {
       // console.log(json);
-      driftory.openComic(json.comic);
+      driftory.openComic(json);
     })
-    .catch((error) => console.error(error));
+    .catch(error => console.error(error));
 });

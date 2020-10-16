@@ -38,11 +38,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var driftory_1 = __importDefault(require("../library/driftory"));
 document.addEventListener('DOMContentLoaded', function () {
-    var nextButton = document.querySelector('.next-button');
+    var container = document.querySelector('.driftory-viewer-container');
+    var startButton = document.querySelector('.start-button');
     var previousButton = document.querySelector('.previous-button');
+    var nextButton = document.querySelector('.next-button');
     var frameInfo = document.querySelector('.frame-info');
     var driftory = new driftory_1.default({
-        container: document.querySelector('.driftory-viewer-container'),
+        container: container,
         prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/',
         onComicLoad: function () {
             console.log('loaded!');
@@ -58,11 +60,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
-    nextButton === null || nextButton === void 0 ? void 0 : nextButton.addEventListener('click', function () {
-        driftory.goToNextFrame();
+    startButton === null || startButton === void 0 ? void 0 : startButton.addEventListener('click', function () {
+        driftory.goToFrame(0);
     });
     previousButton === null || previousButton === void 0 ? void 0 : previousButton.addEventListener('click', function () {
         driftory.goToPreviousFrame();
+    });
+    nextButton === null || nextButton === void 0 ? void 0 : nextButton.addEventListener('click', function () {
+        driftory.goToNextFrame();
     });
     fetch('comic.json')
         .then(function (response) {
@@ -74,18 +79,34 @@ document.addEventListener('DOMContentLoaded', function () {
     })
         .then(function (json) {
         // console.log(json);
-        driftory.openComic(json.comic);
+        driftory.openComic(json);
     })
         .catch(function (error) { return console.error(error); });
 });
 
-},{"../library/driftory":3}],3:[function(require,module,exports){
+},{"../library/driftory":4}],3:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}],4:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var load_js_1 = __importDefault(require("@dan503/load-js"));
+__exportStar(require("./Comic.types"), exports);
+__exportStar(require("./openseadragon.types"), exports);
 var OpenSeadragon;
 var osdRequest;
 var osdPromise = new Promise(function (resolve, reject) {
@@ -99,8 +120,8 @@ var Driftory = /** @class */ (function () {
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
         this.container = args.container;
-        this.onFrameChange = args.onFrameChange;
-        this.onComicLoad = args.onComicLoad;
+        this.onFrameChange = args.onFrameChange || function () { };
+        this.onComicLoad = args.onComicLoad || function () { };
         // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
         // all of the callbacks are called.
         load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
@@ -208,8 +229,9 @@ var Driftory = /** @class */ (function () {
             });
         }
     };
-    Driftory.prototype.openComic = function (comic) {
+    Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
+        var comic = (typeof unsafeComic === 'string' ? JSON.parse(unsafeComic) : unsafeComic).comic;
         osdPromise.then(function () {
             _this.container.style.backgroundColor = comic.body.backgroundColor;
             if (_this.viewer) {
@@ -256,14 +278,18 @@ var Driftory = /** @class */ (function () {
     };
     Driftory.prototype.goToFrame = function (index) {
         var _a;
-        var frame = this.frames[index];
-        var bufferFactor = 0.2;
-        var box = frame.clone();
-        box.width *= 1 + bufferFactor;
-        box.height *= 1 + bufferFactor;
-        box.x -= frame.width * bufferFactor * 0.5;
-        box.y -= frame.height * bufferFactor * 0.5;
-        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.viewport.fitBounds(box);
+        if (this.getFrameIndex() !== index) {
+            var frame = this.frames[index];
+            var bufferFactor = 0.2;
+            if (frame) {
+                var box = frame.clone();
+                box.width *= 1 + bufferFactor;
+                box.height *= 1 + bufferFactor;
+                box.x -= frame.width * bufferFactor * 0.5;
+                box.y -= frame.height * bufferFactor * 0.5;
+                (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.viewport.fitBounds(box);
+            }
+        }
     };
     Driftory.prototype.getFrameIndex = function () {
         return this.frameIndex;
@@ -284,21 +310,21 @@ var Driftory = /** @class */ (function () {
                     }
                 }
             }
-            return bestIndex;
         }
+        return bestIndex;
     };
     Driftory.prototype.getFrameCount = function () {
         return this.frames.length;
     };
     Driftory.prototype.goToNextFrame = function () {
         var index = this.getFrameIndex();
-        if (index !== undefined && index < this.frames.length - 1) {
+        if (index < this.frames.length - 1) {
             this.goToFrame(index + 1);
         }
     };
     Driftory.prototype.goToPreviousFrame = function () {
         var index = this.getFrameIndex();
-        if (index !== undefined && index > 0) {
+        if (index > 0) {
             this.goToFrame(index - 1);
         }
     };
@@ -306,6 +332,11 @@ var Driftory = /** @class */ (function () {
 }());
 exports.default = Driftory;
 
-},{"@dan503/load-js":1}]},{},[2])
+},{"./Comic.types":3,"./openseadragon.types":5,"@dan503/load-js":1}],5:[function(require,module,exports){
+"use strict";
+// Type definitions is a manual copy of @types/openseadragon
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}]},{},[2])
 
 //# sourceMappingURL=demo.js.map

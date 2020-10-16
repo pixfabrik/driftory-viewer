@@ -1,7 +1,7 @@
 import loadJs from '@dan503/load-js';
 import { Comic } from './Comic.types';
-export * from './Comic.types'
-export * from './openseadragon.types'
+export * from './Comic.types';
+export * from './openseadragon.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
@@ -39,15 +39,15 @@ export default class Driftory {
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
   frames: Array<Frame> = [];
-  frameIndex?: number = -1;
+  frameIndex: number = -1;
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
 
   constructor(args: DriftoryArguments) {
     this.container = args.container;
-    this.onFrameChange = args.onFrameChange || function () { };
-    this.onComicLoad = args.onComicLoad || function () { };
+    this.onFrameChange = args.onFrameChange || function() {};
+    this.onComicLoad = args.onComicLoad || function() {};
 
     // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
     // all of the callbacks are called.
@@ -89,7 +89,7 @@ export default class Driftory {
         }
       });
 
-      this.viewer.addHandler('canvas-click', (event) => {
+      this.viewer.addHandler('canvas-click', event => {
         if (!event || !event.quick || !event.position || !this.viewer) {
           return;
         }
@@ -120,7 +120,7 @@ export default class Driftory {
       });
 
       const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
-      this.viewer.innerTracker.scrollHandler = (event) => {
+      this.viewer.innerTracker.scrollHandler = event => {
         if (
           event.originalEvent.ctrlKey ||
           event.originalEvent.altKey ||
@@ -147,7 +147,7 @@ export default class Driftory {
         return false;
       };
 
-      window.addEventListener('keydown', (event) => {
+      window.addEventListener('keydown', event => {
         if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
           return;
         }
@@ -167,13 +167,15 @@ export default class Driftory {
   }
 
   openComic(unsafeComic: Comic | string) {
-    const { comic } = typeof unsafeComic === "string" ? JSON.parse(unsafeComic) as Comic : unsafeComic
+    const { comic } =
+      typeof unsafeComic === 'string' ? (JSON.parse(unsafeComic) as Comic) : unsafeComic;
+
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
 
       if (this.viewer) {
         if (comic.body.frames) {
-          this.frames = comic.body.frames.map((frame) => {
+          this.frames = comic.body.frames.map(frame => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(
@@ -185,7 +187,7 @@ export default class Driftory {
             );
           });
         } else {
-          this.frames = comic.body.items.map((item) => {
+          this.frames = comic.body.items.map(item => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(
@@ -252,7 +254,7 @@ export default class Driftory {
   }
 
   figureFrameIndex() {
-    let bestIndex = 0;
+    let bestIndex = -1;
     let bestDistance = Infinity;
     if (this.viewer) {
       const viewportBounds = this.viewer.viewport.getBounds(true);
@@ -278,14 +280,14 @@ export default class Driftory {
 
   goToNextFrame() {
     let index = this.getFrameIndex();
-    if (index !== undefined && index < this.frames.length - 1) {
+    if (index < this.frames.length - 1) {
       this.goToFrame(index + 1);
     }
   }
 
   goToPreviousFrame() {
     let index = this.getFrameIndex();
-    if (index !== undefined && index > 0) {
+    if (index > 0) {
       this.goToFrame(index - 1);
     }
   }
