@@ -1,32 +1,32 @@
 export interface Comic {
-	creator: Creator,
-	body: Body
+  creator: Creator;
+  body: Body;
 }
 
 export interface Creator {
-	name: string
+  name: string;
 }
 
 export interface Body {
-	formatVersion: number,
-	backgroundColor: string,
-	fadeMode: boolean,
-	items: Array<Item>,
-	frames: Array<Frame>
+  formatVersion: number;
+  backgroundColor: string;
+  fadeMode: boolean;
+  items: Array<Item>;
+  frames: Array<Frame>;
 }
 
 export interface Item {
-	x: number,
-	y: number,
-	width: number,
-	height: number,
-	url: string,
-	fileName: string
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  url: string;
+  fileName: string;
 }
 
 export interface Frame {
-	x: number,
-	y: number,
-	width: number,
-	height: number,
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
