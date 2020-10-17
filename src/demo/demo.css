@@ -20,6 +20,11 @@ body {
   width: 100vw;
   height: 100vh;
   cursor: pointer;
+  transition: 0.5s;
+}
+.driftory-viewer-container.hide {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .openseadragon-canvas:focus {

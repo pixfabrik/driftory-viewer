@@ -1,10 +1,11 @@
 import Driftory from '../library/driftory';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.querySelector('.driftory-viewer-container');
+  const container = document.querySelector('.driftory-viewer-container') as HTMLDivElement;
   const startButton = document.querySelector('.start-button');
   const previousButton = document.querySelector('.previous-button');
   const nextButton = document.querySelector('.next-button');
+  const hideButton = document.querySelector('.hide-button');
   const frameInfo = document.querySelector('.frame-info');
 
   const driftory = new Driftory({
@@ -36,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   nextButton?.addEventListener('click', () => {
     driftory.goToNextFrame();
   });
+
+  hideButton?.addEventListener('click', () => {
+    container.classList.toggle('hide')
+  })
 
   fetch('comic.json')
     .then(response => {
