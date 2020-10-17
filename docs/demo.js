@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var startButton = document.querySelector('.start-button');
     var previousButton = document.querySelector('.previous-button');
     var nextButton = document.querySelector('.next-button');
+    var hideButton = document.querySelector('.hide-button');
     var frameInfo = document.querySelector('.frame-info');
     var driftory = new driftory_1.default({
         container: container,
@@ -69,6 +70,9 @@ document.addEventListener('DOMContentLoaded', function () {
     nextButton === null || nextButton === void 0 ? void 0 : nextButton.addEventListener('click', function () {
         driftory.goToNextFrame();
     });
+    hideButton === null || hideButton === void 0 ? void 0 : hideButton.addEventListener('click', function () {
+        container.classList.toggle('hide');
+    });
     fetch('comic.json')
         .then(function (response) {
         if (!response.ok) {
@@ -83,11 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
     })
         .catch(function (error) { return console.error(error); });
 });
-
 },{"../library/driftory":4}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-
 },{}],4:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -331,12 +333,10 @@ var Driftory = /** @class */ (function () {
     return Driftory;
 }());
 exports.default = Driftory;
-
 },{"./Comic.types":3,"./openseadragon.types":5,"@dan503/load-js":1}],5:[function(require,module,exports){
 "use strict";
 // Type definitions is a manual copy of @types/openseadragon
 Object.defineProperty(exports, "__esModule", { value: true });
-
 },{}]},{},[2])
 
 //# sourceMappingURL=demo.js.map
