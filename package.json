@@ -1,6 +1,6 @@
 {
   "name": "@driftory/viewer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A viewer for comics created with https://www.driftory.com/",
   "main": "./dist/driftory.js",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/pixfabrik/driftory-viewer#readme",
   "dependencies": {
-    "@dan503/load-js": "^1.0.2",
+    "@dan503/load-js": "^1.0.3",
     "openseadragon": "^2.4.2"
   },
   "devDependencies": {
