@@ -46,8 +46,8 @@ export default class Driftory {
 
   constructor(args: DriftoryArguments) {
     this.container = args.container;
-    this.onFrameChange = args.onFrameChange || function() {};
-    this.onComicLoad = args.onComicLoad || function() {};
+    this.onFrameChange = args.onFrameChange || function () {};
+    this.onComicLoad = args.onComicLoad || function () {};
 
     // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
     // all of the callbacks are called.
@@ -75,9 +75,8 @@ export default class Driftory {
       });
 
     if (this.viewer) {
-      // TODO: Maybe don't need to do this every frame.
-      this.viewer.addHandler('animation', () => {
-        const frameIndex = this.figureFrameIndex();
+      const frameHandler = () => {
+        const frameIndex = this.figureFrameIndex(false);
         if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
           this.frameIndex = frameIndex;
           if (this.onFrameChange) {
@@ -87,9 +86,12 @@ export default class Driftory {
             });
           }
         }
-      });
+      };
 
-      this.viewer.addHandler('canvas-click', event => {
+      this.viewer.addHandler('zoom', frameHandler);
+      this.viewer.addHandler('pan', frameHandler);
+
+      this.viewer.addHandler('canvas-click', (event) => {
         if (!event || !event.quick || !event.position || !this.viewer) {
           return;
         }
@@ -106,7 +108,7 @@ export default class Driftory {
         }
 
         if (foundIndex === -1) {
-          const realFrameIndex = this.figureFrameIndex();
+          const realFrameIndex = this.figureFrameIndex(true);
           if (realFrameIndex === -1 && this.frameIndex !== undefined) {
             this.goToFrame(this.frameIndex);
           } else {
@@ -120,7 +122,7 @@ export default class Driftory {
       });
 
       const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
-      this.viewer.innerTracker.scrollHandler = event => {
+      this.viewer.innerTracker.scrollHandler = (event) => {
         if (
           event.originalEvent.ctrlKey ||
           event.originalEvent.altKey ||
@@ -147,7 +149,7 @@ export default class Driftory {
         return false;
       };
 
-      window.addEventListener('keydown', event => {
+      window.addEventListener('keydown', (event) => {
         if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
           return;
         }
@@ -175,7 +177,7 @@ export default class Driftory {
 
       if (this.viewer) {
         if (comic.body.frames) {
-          this.frames = comic.body.frames.map(frame => {
+          this.frames = comic.body.frames.map((frame) => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(
@@ -187,7 +189,7 @@ export default class Driftory {
             );
           });
         } else {
-          this.frames = comic.body.items.map(item => {
+          this.frames = comic.body.items.map((item) => {
             return (
               OpenSeadragon &&
               new OpenSeadragon.Rect(
@@ -253,11 +255,11 @@ export default class Driftory {
     return this.frameIndex;
   }
 
-  figureFrameIndex() {
+  figureFrameIndex(current: boolean) {
     let bestIndex = -1;
     let bestDistance = Infinity;
     if (this.viewer) {
-      const viewportBounds = this.viewer.viewport.getBounds(true);
+      const viewportBounds = this.viewer.viewport.getBounds(current);
       const viewportCenter = viewportBounds.getCenter();
 
       for (let i = 0; i < this.frames.length; i++) {

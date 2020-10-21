@@ -1,12 +1,18 @@
 import Driftory from '../library/driftory';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.querySelector('.driftory-viewer-container') as HTMLDivElement;
+  const container = document.querySelector('.driftory-viewer-container') as HTMLDivElement | null;
   const startButton = document.querySelector('.start-button');
+  const endButton = document.querySelector('.end-button');
   const previousButton = document.querySelector('.previous-button');
   const nextButton = document.querySelector('.next-button');
   const hideButton = document.querySelector('.hide-button');
   const frameInfo = document.querySelector('.frame-info');
+
+  if (!container) {
+    console.error('Cannot find viewer container');
+    return;
+  }
 
   const driftory = new Driftory({
     container,
@@ -30,6 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
     driftory.goToFrame(0);
   });
 
+  endButton?.addEventListener('click', () => {
+    driftory.goToFrame(driftory.getFrameCount() - 1);
+  });
+
   previousButton?.addEventListener('click', () => {
     driftory.goToPreviousFrame();
   });
@@ -39,11 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   hideButton?.addEventListener('click', () => {
-    container.classList.toggle('hide')
-  })
+    container.classList.toggle('hide');
+  });
 
   fetch('comic.json')
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         console.error(response);
         throw new Error('Failed to load comic.json');
@@ -51,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return response.json();
     })
-    .then(json => {
+    .then((json) => {
       // console.log(json);
       driftory.openComic(json);
     })
-    .catch(error => console.error(error));
+    .catch((error) => console.error(error));
 });
