@@ -1,6 +1,6 @@
 {
   "name": "@driftory/viewer",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A viewer for comics created with https://www.driftory.com/",
   "main": "./dist/driftory.js",
   "scripts": {
