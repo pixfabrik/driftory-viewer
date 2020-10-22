@@ -1,28 +1,46 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var alreadyCalledSources = [];
-var awaitingCallbacks = {};
+var alreadyCalledScripts = [];
+var allScripts = {};
+var defaultScript = { hasLoaded: false, callbacks: [] };
 var addCallback = function (src, callback) {
-    if (awaitingCallbacks[src]) {
-        awaitingCallbacks[src].push(callback);
+    var script = allScripts[src];
+    if (!script)
+        return;
+    if (script.hasLoaded) {
+        // If the script has already been previously loaded, just run the callback immediately
+        callback();
     }
     else {
-        awaitingCallbacks[src] = [callback];
+        if (script.callbacks.length > 0) {
+            script.callbacks.push(callback);
+        }
+        else {
+            script.callbacks = [callback];
+        }
     }
 };
 function loadJS(src, callback) {
-    if (alreadyCalledSources.indexOf(src) < 0) {
-        alreadyCalledSources.push(src);
-        var script = document.createElement('script');
-        script.src = src;
-        script.onload = function () {
+    var script = allScripts[src] || defaultScript;
+    allScripts[src] = script;
+    if (alreadyCalledScripts.indexOf(src) < 0) {
+        alreadyCalledScripts.push(src);
+        var $scriptElem = document.createElement('script');
+        $scriptElem.setAttribute('class', 'load-js-script');
+        $scriptElem.src = src;
+        $scriptElem.onload = function () {
             addCallback(src, callback);
-            for (var key in awaitingCallbacks) {
-                awaitingCallbacks[key].forEach(function (cb) { return cb(); });
+            var updatedScript = allScripts[src];
+            if (updatedScript) {
+                updatedScript.hasLoaded = true;
+            }
+            for (var thisSource in allScripts) {
+                var thisScript = allScripts[thisSource] || defaultScript;
+                thisScript.callbacks.forEach(function (cb) { return cb(); });
             }
         };
-        document.head.appendChild(script);
+        document.head.appendChild($scriptElem);
     }
     else {
         addCallback(src, callback);
@@ -81,11 +99,13 @@ document.addEventListener('DOMContentLoaded', function () {
     hideButton === null || hideButton === void 0 ? void 0 : hideButton.addEventListener('click', function () {
         container.classList.toggle('hide');
     });
-    fetch('comic.json')
+    // const comicName = 'comic2.json';
+    var comicName = 'comic.json';
+    fetch(comicName)
         .then(function (response) {
         if (!response.ok) {
             console.error(response);
-            throw new Error('Failed to load comic.json');
+            throw new Error('Failed to load ' + comicName);
         }
         return response.json();
     })
@@ -125,8 +145,10 @@ var osdPromise = new Promise(function (resolve, reject) {
     osdRequest = { resolve: resolve, reject: reject };
 });
 var Driftory = /** @class */ (function () {
+    // ----------
     function Driftory(args) {
         var _this = this;
+        this.imageItems = [];
         this.frames = [];
         this.frameIndex = -1;
         this.lastScrollTime = 0;
@@ -138,11 +160,12 @@ var Driftory = /** @class */ (function () {
         // all of the callbacks are called.
         load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
             OpenSeadragon = window.OpenSeadragon;
-            _this.initialize(args);
+            _this._initialize(args);
             osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
         });
     }
-    Driftory.prototype.initialize = function (_a) {
+    // ----------
+    Driftory.prototype._initialize = function (_a) {
         var _this = this;
         var container = _a.container, prefixUrl = _a.prefixUrl;
         this.viewer =
@@ -157,20 +180,6 @@ var Driftory = /** @class */ (function () {
                     }
                 });
         if (this.viewer) {
-            var frameHandler = function () {
-                var frameIndex = _this.figureFrameIndex(false);
-                if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
-                    _this.frameIndex = frameIndex;
-                    if (_this.onFrameChange) {
-                        _this.onFrameChange({
-                            frameIndex: frameIndex,
-                            isLastFrame: frameIndex === _this.getFrameCount() - 1
-                        });
-                    }
-                }
-            };
-            this.viewer.addHandler('zoom', frameHandler);
-            this.viewer.addHandler('pan', frameHandler);
             this.viewer.addHandler('canvas-click', function (event) {
                 if (!event || !event.quick || !event.position || !_this.viewer) {
                     return;
@@ -185,7 +194,7 @@ var Driftory = /** @class */ (function () {
                     }
                 }
                 if (foundIndex === -1) {
-                    var realFrameIndex = _this.figureFrameIndex(true);
+                    var realFrameIndex = _this._figureFrameIndex(true);
                     if (realFrameIndex === -1 && _this.frameIndex !== undefined) {
                         _this.goToFrame(_this.frameIndex);
                     }
@@ -244,6 +253,10 @@ var Driftory = /** @class */ (function () {
     };
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
+        if (this.frames.length || this.imageItems.length) {
+            console.error('Currently the Driftory viewer is not set up to load a second comic after the first.');
+            return;
+        }
         var comic = (typeof unsafeComic === 'string' ? JSON.parse(unsafeComic) : unsafeComic).comic;
         osdPromise.then(function () {
             _this.container.style.backgroundColor = comic.body.backgroundColor;
@@ -262,15 +275,22 @@ var Driftory = /** @class */ (function () {
                 }
                 comic.body.items.forEach(function (item, i) {
                     var _a;
-                    var success;
-                    if (i === 0) {
-                        success = function () { return _this.goToFrame(0); };
-                    }
+                    var imageItem = {
+                        hideUntilFrame: item.hideUntilFrame
+                    };
+                    _this.imageItems.push(imageItem);
                     (_a = _this.viewer) === null || _a === void 0 ? void 0 : _a.addTiledImage({
+                        preload: true,
                         x: item.x - item.width / 2,
                         y: item.y - item.height / 2,
                         width: item.width,
-                        success: success,
+                        success: function (event) {
+                            imageItem.tiledImage = event.item;
+                            _this._updateImageVisibility();
+                            if (i === 0) {
+                                _this._startComic();
+                            }
+                        },
                         tileSource: {
                             type: 'legacy-image-pyramid',
                             levels: [
@@ -283,12 +303,45 @@ var Driftory = /** @class */ (function () {
                         }
                     });
                 });
-                if (_this.onComicLoad) {
-                    _this.onComicLoad({});
-                }
             }
         });
     };
+    // ----------
+    Driftory.prototype._startComic = function () {
+        var _this = this;
+        var frameHandler = function () {
+            var frameIndex = _this._figureFrameIndex(false);
+            if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
+                _this.frameIndex = frameIndex;
+                _this._updateImageVisibility();
+                if (_this.onFrameChange) {
+                    _this.onFrameChange({
+                        frameIndex: frameIndex,
+                        isLastFrame: frameIndex === _this.getFrameCount() - 1
+                    });
+                }
+            }
+        };
+        if (this.viewer) {
+            this.viewer.addHandler('zoom', frameHandler);
+            this.viewer.addHandler('pan', frameHandler);
+        }
+        this.goToFrame(0);
+        if (this.onComicLoad) {
+            this.onComicLoad({});
+        }
+    };
+    // ----------
+    Driftory.prototype._updateImageVisibility = function () {
+        var _this = this;
+        this.imageItems.forEach(function (imageItem) {
+            var _a;
+            if (imageItem.hideUntilFrame !== undefined) {
+                (_a = imageItem.tiledImage) === null || _a === void 0 ? void 0 : _a.setOpacity(_this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
+            }
+        });
+    };
+    // ----------
     Driftory.prototype.goToFrame = function (index) {
         var _a;
         if (this.getFrameIndex() !== index) {
@@ -304,10 +357,12 @@ var Driftory = /** @class */ (function () {
             }
         }
     };
+    // ----------
     Driftory.prototype.getFrameIndex = function () {
         return this.frameIndex;
     };
-    Driftory.prototype.figureFrameIndex = function (current) {
+    // ----------
+    Driftory.prototype._figureFrameIndex = function (current) {
         var bestIndex = -1;
         var bestDistance = Infinity;
         if (this.viewer) {
@@ -326,15 +381,18 @@ var Driftory = /** @class */ (function () {
         }
         return bestIndex;
     };
+    // ----------
     Driftory.prototype.getFrameCount = function () {
         return this.frames.length;
     };
+    // ----------
     Driftory.prototype.goToNextFrame = function () {
         var index = this.getFrameIndex();
         if (index < this.frames.length - 1) {
             this.goToFrame(index + 1);
         }
     };
+    // ----------
     Driftory.prototype.goToPreviousFrame = function () {
         var index = this.getFrameIndex();
         if (index > 0) {

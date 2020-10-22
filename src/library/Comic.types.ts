@@ -24,6 +24,7 @@ export interface Item {
   height: number;
   url: string;
   fileName: string;
+  hideUntilFrame: number;
 }
 
 export interface Frame {
