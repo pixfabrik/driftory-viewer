@@ -52,11 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
     container.classList.toggle('hide');
   });
 
-  fetch('comic.json')
+  // const comicName = 'comic2.json';
+  const comicName = 'comic.json';
+  fetch(comicName)
     .then((response) => {
       if (!response.ok) {
         console.error(response);
-        throw new Error('Failed to load comic.json');
+        throw new Error('Failed to load ' + comicName);
       }
 
       return response.json();

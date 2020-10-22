@@ -99,11 +99,13 @@ document.addEventListener('DOMContentLoaded', function () {
     hideButton === null || hideButton === void 0 ? void 0 : hideButton.addEventListener('click', function () {
         container.classList.toggle('hide');
     });
-    fetch('comic.json')
+    // const comicName = 'comic2.json';
+    var comicName = 'comic.json';
+    fetch(comicName)
         .then(function (response) {
         if (!response.ok) {
             console.error(response);
-            throw new Error('Failed to load comic.json');
+            throw new Error('Failed to load ' + comicName);
         }
         return response.json();
     })
@@ -146,6 +148,7 @@ var Driftory = /** @class */ (function () {
     // ----------
     function Driftory(args) {
         var _this = this;
+        this.imageItems = [];
         this.frames = [];
         this.frameIndex = -1;
         this.lastScrollTime = 0;
@@ -250,7 +253,7 @@ var Driftory = /** @class */ (function () {
     };
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
-        if (this.frames.length) {
+        if (this.frames.length || this.imageItems.length) {
             console.error('Currently the Driftory viewer is not set up to load a second comic after the first.');
             return;
         }
@@ -272,15 +275,22 @@ var Driftory = /** @class */ (function () {
                 }
                 comic.body.items.forEach(function (item, i) {
                     var _a;
-                    var success;
-                    if (i === 0) {
-                        success = function () { return _this._startComic(); };
-                    }
+                    var imageItem = {
+                        hideUntilFrame: item.hideUntilFrame
+                    };
+                    _this.imageItems.push(imageItem);
                     (_a = _this.viewer) === null || _a === void 0 ? void 0 : _a.addTiledImage({
+                        preload: true,
                         x: item.x - item.width / 2,
                         y: item.y - item.height / 2,
                         width: item.width,
-                        success: success,
+                        success: function (event) {
+                            imageItem.tiledImage = event.item;
+                            _this._updateImageVisibility();
+                            if (i === 0) {
+                                _this._startComic();
+                            }
+                        },
                         tileSource: {
                             type: 'legacy-image-pyramid',
                             levels: [
@@ -303,6 +313,7 @@ var Driftory = /** @class */ (function () {
             var frameIndex = _this._figureFrameIndex(false);
             if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
                 _this.frameIndex = frameIndex;
+                _this._updateImageVisibility();
                 if (_this.onFrameChange) {
                     _this.onFrameChange({
                         frameIndex: frameIndex,
@@ -311,14 +322,24 @@ var Driftory = /** @class */ (function () {
                 }
             }
         };
-        this.goToFrame(0);
         if (this.viewer) {
             this.viewer.addHandler('zoom', frameHandler);
             this.viewer.addHandler('pan', frameHandler);
         }
+        this.goToFrame(0);
         if (this.onComicLoad) {
             this.onComicLoad({});
         }
+    };
+    // ----------
+    Driftory.prototype._updateImageVisibility = function () {
+        var _this = this;
+        this.imageItems.forEach(function (imageItem) {
+            var _a;
+            if (imageItem.hideUntilFrame !== undefined) {
+                (_a = imageItem.tiledImage) === null || _a === void 0 ? void 0 : _a.setOpacity(_this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
+            }
+        });
     };
     // ----------
     Driftory.prototype.goToFrame = function (index) {
