@@ -23,12 +23,12 @@ const osdPromise = new Promise((resolve, reject) => {
 });
 
 type Frame = any;
-type Container = any;
+type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
 
 interface DriftoryArguments {
-  container: HTMLElement;
+  container: Container;
   onFrameChange?: OnFrameChange;
   onComicLoad?: OnComicLoad;
   prefixUrl?: string;
@@ -46,8 +46,8 @@ export default class Driftory {
 
   constructor(args: DriftoryArguments) {
     this.container = args.container;
-    this.onFrameChange = args.onFrameChange || function () {};
-    this.onComicLoad = args.onComicLoad || function () {};
+    this.onFrameChange = args.onFrameChange || function () { };
+    this.onComicLoad = args.onComicLoad || function () { };
 
     // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
     // all of the callbacks are called.
