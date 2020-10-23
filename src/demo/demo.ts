@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         frameInfo.textContent = text;
       }
+    },
+    onEnd: () => {
+      console.log('User trying to go past end');
     }
   });
 
