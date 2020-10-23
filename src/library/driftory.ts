@@ -27,15 +27,18 @@ interface ImageItem {
   tiledImage?: OpenSeadragon.TiledImage;
 }
 
-type Frame = any;
+type Frame = OpenSeadragon.Rect;
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
+type OnEnd = (params: {}) => void;
 
 interface DriftoryArguments {
   container: Container;
+  OpenSeadragon?: OpenSeadragonType;
   onFrameChange?: OnFrameChange;
   onComicLoad?: OnComicLoad;
+  onEnd?: OnEnd;
   prefixUrl?: string;
 }
 
@@ -43,6 +46,7 @@ export default class Driftory {
   container: Container;
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
+  onEnd: OnEnd;
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
   frameIndex: number = -1;
@@ -55,17 +59,24 @@ export default class Driftory {
     this.container = args.container;
     this.onFrameChange = args.onFrameChange || function () {};
     this.onComicLoad = args.onComicLoad || function () {};
+    this.onEnd = args.onEnd || function () {};
 
-    // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
-    // all of the callbacks are called.
-    loadJs(
-      'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
-      () => {
-        OpenSeadragon = window.OpenSeadragon;
-        this._initialize(args);
-        osdRequest?.resolve();
-      }
-    );
+    if (args.OpenSeadragon) {
+      OpenSeadragon = args.OpenSeadragon;
+      this._initialize(args);
+      osdRequest?.resolve();
+    } else {
+      // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+      // all of the callbacks are called.
+      loadJs(
+        'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js',
+        () => {
+          OpenSeadragon = window.OpenSeadragon;
+          this._initialize(args);
+          osdRequest?.resolve();
+        }
+      );
+    }
   }
 
   // ----------
@@ -89,16 +100,7 @@ export default class Driftory {
         }
 
         const point = this.viewer.viewport.pointFromPixel(event.position);
-        let foundIndex = -1;
-        const itemCount = this.viewer.world.getItemCount();
-
-        for (let i = 0; i < itemCount; i++) {
-          const item = this.viewer.world.getItemAt(i);
-          if (item.getBounds().containsPoint(point)) {
-            foundIndex = i;
-          }
-        }
-
+        let foundIndex = this._getHitFrame(point);
         if (foundIndex === -1) {
           const realFrameIndex = this._figureFrameIndex(true);
           if (realFrameIndex === -1 && this.frameIndex !== undefined) {
@@ -178,26 +180,20 @@ export default class Driftory {
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
-            return (
-              OpenSeadragon &&
-              new OpenSeadragon.Rect(
-                frame.x - frame.width / 2,
-                frame.y - frame.height / 2,
-                frame.width,
-                frame.height
-              )
+            return new OpenSeadragon!.Rect(
+              frame.x - frame.width / 2,
+              frame.y - frame.height / 2,
+              frame.width,
+              frame.height
             );
           });
         } else {
           this.frames = comic.body.items.map((item) => {
-            return (
-              OpenSeadragon &&
-              new OpenSeadragon.Rect(
-                item.x - item.width / 2,
-                item.y - item.height / 2,
-                item.width,
-                item.height
-              )
+            return new OpenSeadragon!.Rect(
+              item.x - item.width / 2,
+              item.y - item.height / 2,
+              item.width,
+              item.height
             );
           });
         }
@@ -322,6 +318,20 @@ export default class Driftory {
   }
 
   // ----------
+  _getHitFrame(point: OpenSeadragon.Point) {
+    if (this.viewer) {
+      for (let i = 0; i < this.frames.length; i++) {
+        const frame = this.frames[i];
+        if (frame.containsPoint(point)) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  // ----------
   getFrameCount() {
     return this.frames.length;
   }
@@ -331,6 +341,8 @@ export default class Driftory {
     let index = this.getFrameIndex();
     if (index < this.frames.length - 1) {
       this.goToFrame(index + 1);
+    } else {
+      this.onEnd({});
     }
   }
 

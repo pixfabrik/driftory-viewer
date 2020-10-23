@@ -82,6 +82,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 frameInfo.textContent = text;
             }
+        },
+        onEnd: function () {
+            console.log('User trying to go past end');
         }
     });
     startButton === null || startButton === void 0 ? void 0 : startButton.addEventListener('click', function () {
@@ -156,13 +159,21 @@ var Driftory = /** @class */ (function () {
         this.container = args.container;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
-        // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
-        // all of the callbacks are called.
-        load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
-            OpenSeadragon = window.OpenSeadragon;
-            _this._initialize(args);
+        this.onEnd = args.onEnd || function () { };
+        if (args.OpenSeadragon) {
+            OpenSeadragon = args.OpenSeadragon;
+            this._initialize(args);
             osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
-        });
+        }
+        else {
+            // Note: loadJs only loads the file once, even if called multiple times, and always makes sure
+            // all of the callbacks are called.
+            load_js_1.default('https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js', function () {
+                OpenSeadragon = window.OpenSeadragon;
+                _this._initialize(args);
+                osdRequest === null || osdRequest === void 0 ? void 0 : osdRequest.resolve();
+            });
+        }
     }
     // ----------
     Driftory.prototype._initialize = function (_a) {
@@ -185,14 +196,7 @@ var Driftory = /** @class */ (function () {
                     return;
                 }
                 var point = _this.viewer.viewport.pointFromPixel(event.position);
-                var foundIndex = -1;
-                var itemCount = _this.viewer.world.getItemCount();
-                for (var i = 0; i < itemCount; i++) {
-                    var item = _this.viewer.world.getItemAt(i);
-                    if (item.getBounds().containsPoint(point)) {
-                        foundIndex = i;
-                    }
-                }
+                var foundIndex = _this._getHitFrame(point);
                 if (foundIndex === -1) {
                     var realFrameIndex = _this._figureFrameIndex(true);
                     if (realFrameIndex === -1 && _this.frameIndex !== undefined) {
@@ -263,14 +267,12 @@ var Driftory = /** @class */ (function () {
             if (_this.viewer) {
                 if (comic.body.frames) {
                     _this.frames = comic.body.frames.map(function (frame) {
-                        return (OpenSeadragon &&
-                            new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height));
+                        return new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height);
                     });
                 }
                 else {
                     _this.frames = comic.body.items.map(function (item) {
-                        return (OpenSeadragon &&
-                            new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height));
+                        return new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height);
                     });
                 }
                 comic.body.items.forEach(function (item, i) {
@@ -382,6 +384,18 @@ var Driftory = /** @class */ (function () {
         return bestIndex;
     };
     // ----------
+    Driftory.prototype._getHitFrame = function (point) {
+        if (this.viewer) {
+            for (var i = 0; i < this.frames.length; i++) {
+                var frame = this.frames[i];
+                if (frame.containsPoint(point)) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    };
+    // ----------
     Driftory.prototype.getFrameCount = function () {
         return this.frames.length;
     };
@@ -390,6 +404,9 @@ var Driftory = /** @class */ (function () {
         var index = this.getFrameIndex();
         if (index < this.frames.length - 1) {
             this.goToFrame(index + 1);
+        }
+        else {
+            this.onEnd({});
         }
     };
     // ----------
