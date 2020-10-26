@@ -31,14 +31,16 @@ type Frame = OpenSeadragon.Rect;
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
-type OnEnd = (params: {}) => void;
+type OnNoNext = (params: {}) => void;
+type OnNoPrevious = (params: {}) => void;
 
 interface DriftoryArguments {
   container: Container;
   OpenSeadragon?: OpenSeadragonType;
   onFrameChange?: OnFrameChange;
   onComicLoad?: OnComicLoad;
-  onEnd?: OnEnd;
+  onNoNext?: OnNoNext;
+  onNoPrevious?: OnNoPrevious;
   prefixUrl?: string;
 }
 
@@ -46,7 +48,8 @@ export default class Driftory {
   container: Container;
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
-  onEnd: OnEnd;
+  onNoNext: OnNoNext;
+  onNoPrevious: OnNoPrevious;
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
   frameIndex: number = -1;
@@ -60,7 +63,8 @@ export default class Driftory {
     this.container = args.container;
     this.onFrameChange = args.onFrameChange || function () {};
     this.onComicLoad = args.onComicLoad || function () {};
-    this.onEnd = args.onEnd || function () {};
+    this.onNoNext = args.onNoNext || function () {};
+    this.onNoPrevious = args.onNoPrevious || function () {};
 
     if (args.OpenSeadragon) {
       OpenSeadragon = args.OpenSeadragon;
@@ -360,7 +364,7 @@ export default class Driftory {
     if (index < this.frames.length - 1) {
       this.goToFrame(index + 1);
     } else {
-      this.onEnd({});
+      this.onNoNext({});
     }
   }
 
@@ -369,6 +373,8 @@ export default class Driftory {
     let index = this.getFrameIndex();
     if (index > 0) {
       this.goToFrame(index - 1);
+    } else {
+      this.onNoPrevious({});
     }
   }
 }

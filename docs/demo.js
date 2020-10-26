@@ -84,8 +84,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 frameInfo.textContent = text;
             }
         },
-        onEnd: function () {
+        onNoNext: function () {
             console.log('User trying to go past end');
+        },
+        onNoPrevious: function () {
+            console.log('User trying to go before beginning');
         }
     });
     startButton === null || startButton === void 0 ? void 0 : startButton.addEventListener('click', function () {
@@ -108,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
         driftory.setNavEnabled(flag);
         navButton.textContent = flag ? 'disable nav' : 'enable nav';
     });
-    // const comicName = 'comic.json';
+    var comicName = 'comic.json';
     // const comicName = 'comic-no-frames.json';
     // const comicName = 'comic-hide-until-frame.json';
     fetch(comicName)
@@ -167,7 +170,8 @@ var Driftory = /** @class */ (function () {
         this.container = args.container;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
-        this.onEnd = args.onEnd || function () { };
+        this.onNoNext = args.onNoNext || function () { };
+        this.onNoPrevious = args.onNoPrevious || function () { };
         if (args.OpenSeadragon) {
             OpenSeadragon = args.OpenSeadragon;
             this._initialize(args);
@@ -358,9 +362,7 @@ var Driftory = /** @class */ (function () {
     };
     // ----------
     Driftory.prototype.getNavEnabled = function () {
-        var _a;
         return this.navEnabled;
-        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
     };
     // ----------
     Driftory.prototype.setNavEnabled = function (flag) {
@@ -431,7 +433,7 @@ var Driftory = /** @class */ (function () {
             this.goToFrame(index + 1);
         }
         else {
-            this.onEnd({});
+            this.onNoNext({});
         }
     };
     // ----------
@@ -439,6 +441,9 @@ var Driftory = /** @class */ (function () {
         var index = this.getFrameIndex();
         if (index > 0) {
             this.goToFrame(index - 1);
+        }
+        else {
+            this.onNoPrevious({});
         }
     };
     return Driftory;

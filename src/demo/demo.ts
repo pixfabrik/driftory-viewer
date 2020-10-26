@@ -31,8 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
         frameInfo.textContent = text;
       }
     },
-    onEnd: () => {
+    onNoNext: () => {
       console.log('User trying to go past end');
+    },
+    onNoPrevious: () => {
+      console.log('User trying to go before beginning');
     }
   });
 
