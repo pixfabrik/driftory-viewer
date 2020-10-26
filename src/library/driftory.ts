@@ -31,14 +31,16 @@ type Frame = OpenSeadragon.Rect;
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
-type OnEnd = (params: {}) => void;
+type OnNoNext = (params: {}) => void;
+type OnNoPrevious = (params: {}) => void;
 
 interface DriftoryArguments {
   container: Container;
   OpenSeadragon?: OpenSeadragonType;
   onFrameChange?: OnFrameChange;
   onComicLoad?: OnComicLoad;
-  onEnd?: OnEnd;
+  onNoNext?: OnNoNext;
+  onNoPrevious?: OnNoPrevious;
   prefixUrl?: string;
 }
 
@@ -46,20 +48,23 @@ export default class Driftory {
   container: Container;
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
-  onEnd: OnEnd;
+  onNoNext: OnNoNext;
+  onNoPrevious: OnNoPrevious;
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
   frameIndex: number = -1;
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
+  navEnabled: boolean = true;
 
   // ----------
   constructor(args: DriftoryArguments) {
     this.container = args.container;
     this.onFrameChange = args.onFrameChange || function () {};
     this.onComicLoad = args.onComicLoad || function () {};
-    this.onEnd = args.onEnd || function () {};
+    this.onNoNext = args.onNoNext || function () {};
+    this.onNoPrevious = args.onNoPrevious || function () {};
 
     if (args.OpenSeadragon) {
       OpenSeadragon = args.OpenSeadragon;
@@ -95,7 +100,7 @@ export default class Driftory {
 
     if (this.viewer) {
       this.viewer.addHandler('canvas-click', (event) => {
-        if (!event || !event.quick || !event.position || !this.viewer) {
+        if (!event || !event.quick || !event.position || !this.viewer || !this.navEnabled) {
           return;
         }
 
@@ -117,6 +122,11 @@ export default class Driftory {
 
       const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
       this.viewer.innerTracker.scrollHandler = (event) => {
+        if (!this.navEnabled) {
+          // Returning false stops the browser from scrolling itself.
+          return false;
+        }
+
         if (
           event.originalEvent.ctrlKey ||
           event.originalEvent.altKey ||
@@ -144,7 +154,7 @@ export default class Driftory {
       };
 
       window.addEventListener('keydown', (event) => {
-        if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+        if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey || !this.navEnabled) {
           return;
         }
 
@@ -162,6 +172,7 @@ export default class Driftory {
     }
   }
 
+  // ----------
   openComic(unsafeComic: Comic | string) {
     if (this.frames.length || this.imageItems.length) {
       console.error(
@@ -273,6 +284,17 @@ export default class Driftory {
   }
 
   // ----------
+  getNavEnabled() {
+    return this.navEnabled;
+  }
+
+  // ----------
+  setNavEnabled(flag: boolean) {
+    this.navEnabled = flag;
+    this.viewer?.setMouseNavEnabled(flag);
+  }
+
+  // ----------
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
       var frame = this.frames[index];
@@ -342,7 +364,7 @@ export default class Driftory {
     if (index < this.frames.length - 1) {
       this.goToFrame(index + 1);
     } else {
-      this.onEnd({});
+      this.onNoNext({});
     }
   }
 
@@ -351,6 +373,8 @@ export default class Driftory {
     let index = this.getFrameIndex();
     if (index > 0) {
       this.goToFrame(index - 1);
+    } else {
+      this.onNoPrevious({});
     }
   }
 }

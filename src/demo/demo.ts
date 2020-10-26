@@ -1,12 +1,15 @@
 import Driftory from '../library/driftory';
 
 document.addEventListener('DOMContentLoaded', () => {
+  // We need to cast this to HTMLDivElement because that's what Driftory needs.
   const container = document.querySelector('.driftory-viewer-container') as HTMLDivElement | null;
+
   const startButton = document.querySelector('.start-button');
   const endButton = document.querySelector('.end-button');
   const previousButton = document.querySelector('.previous-button');
   const nextButton = document.querySelector('.next-button');
   const hideButton = document.querySelector('.hide-button');
+  const navButton = document.querySelector('.nav-button');
   const frameInfo = document.querySelector('.frame-info');
 
   if (!container) {
@@ -30,8 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
         frameInfo.textContent = text;
       }
     },
-    onEnd: () => {
+    onNoNext: () => {
       console.log('User trying to go past end');
+    },
+    onNoPrevious: () => {
+      console.log('User trying to go before beginning');
     }
   });
 
@@ -55,8 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
     container.classList.toggle('hide');
   });
 
-  // const comicName = 'comic2.json';
+  navButton?.addEventListener('click', () => {
+    const flag = !driftory.getNavEnabled();
+    driftory.setNavEnabled(flag);
+    navButton.textContent = flag ? 'disable nav' : 'enable nav';
+  });
+
   const comicName = 'comic.json';
+  // const comicName = 'comic-no-frames.json';
+  // const comicName = 'comic-hide-until-frame.json';
   fetch(comicName)
     .then((response) => {
       if (!response.ok) {

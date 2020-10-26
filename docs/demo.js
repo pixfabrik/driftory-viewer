@@ -56,12 +56,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var driftory_1 = __importDefault(require("../library/driftory"));
 document.addEventListener('DOMContentLoaded', function () {
+    // We need to cast this to HTMLDivElement because that's what Driftory needs.
     var container = document.querySelector('.driftory-viewer-container');
     var startButton = document.querySelector('.start-button');
     var endButton = document.querySelector('.end-button');
     var previousButton = document.querySelector('.previous-button');
     var nextButton = document.querySelector('.next-button');
     var hideButton = document.querySelector('.hide-button');
+    var navButton = document.querySelector('.nav-button');
     var frameInfo = document.querySelector('.frame-info');
     if (!container) {
         console.error('Cannot find viewer container');
@@ -83,8 +85,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 frameInfo.textContent = text;
             }
         },
-        onEnd: function () {
+        onNoNext: function () {
             console.log('User trying to go past end');
+        },
+        onNoPrevious: function () {
+            console.log('User trying to go before beginning');
         }
     });
     startButton === null || startButton === void 0 ? void 0 : startButton.addEventListener('click', function () {
@@ -102,8 +107,14 @@ document.addEventListener('DOMContentLoaded', function () {
     hideButton === null || hideButton === void 0 ? void 0 : hideButton.addEventListener('click', function () {
         container.classList.toggle('hide');
     });
-    // const comicName = 'comic2.json';
+    navButton === null || navButton === void 0 ? void 0 : navButton.addEventListener('click', function () {
+        var flag = !driftory.getNavEnabled();
+        driftory.setNavEnabled(flag);
+        navButton.textContent = flag ? 'disable nav' : 'enable nav';
+    });
     var comicName = 'comic.json';
+    // const comicName = 'comic-no-frames.json';
+    // const comicName = 'comic-hide-until-frame.json';
     fetch(comicName)
         .then(function (response) {
         if (!response.ok) {
@@ -156,10 +167,12 @@ var Driftory = /** @class */ (function () {
         this.frameIndex = -1;
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
+        this.navEnabled = true;
         this.container = args.container;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
-        this.onEnd = args.onEnd || function () { };
+        this.onNoNext = args.onNoNext || function () { };
+        this.onNoPrevious = args.onNoPrevious || function () { };
         if (args.OpenSeadragon) {
             OpenSeadragon = args.OpenSeadragon;
             this._initialize(args);
@@ -192,7 +205,7 @@ var Driftory = /** @class */ (function () {
                 });
         if (this.viewer) {
             this.viewer.addHandler('canvas-click', function (event) {
-                if (!event || !event.quick || !event.position || !_this.viewer) {
+                if (!event || !event.quick || !event.position || !_this.viewer || !_this.navEnabled) {
                     return;
                 }
                 var point = _this.viewer.viewport.pointFromPixel(event.position);
@@ -216,6 +229,10 @@ var Driftory = /** @class */ (function () {
             var originalScrollHandler_1 = this.viewer.innerTracker.scrollHandler;
             this.viewer.innerTracker.scrollHandler = function (event) {
                 var _a;
+                if (!_this.navEnabled) {
+                    // Returning false stops the browser from scrolling itself.
+                    return false;
+                }
                 if (event.originalEvent.ctrlKey ||
                     event.originalEvent.altKey ||
                     event.originalEvent.metaKey) {
@@ -238,7 +255,7 @@ var Driftory = /** @class */ (function () {
                 return false;
             };
             window.addEventListener('keydown', function (event) {
-                if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+                if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey || !_this.navEnabled) {
                     return;
                 }
                 if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === ' ') {
@@ -255,6 +272,7 @@ var Driftory = /** @class */ (function () {
             });
         }
     };
+    // ----------
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
         if (this.frames.length || this.imageItems.length) {
@@ -344,6 +362,16 @@ var Driftory = /** @class */ (function () {
         });
     };
     // ----------
+    Driftory.prototype.getNavEnabled = function () {
+        return this.navEnabled;
+    };
+    // ----------
+    Driftory.prototype.setNavEnabled = function (flag) {
+        var _a;
+        this.navEnabled = flag;
+        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
+    };
+    // ----------
     Driftory.prototype.goToFrame = function (index) {
         var _a;
         if (this.getFrameIndex() !== index) {
@@ -406,7 +434,7 @@ var Driftory = /** @class */ (function () {
             this.goToFrame(index + 1);
         }
         else {
-            this.onEnd({});
+            this.onNoNext({});
         }
     };
     // ----------
@@ -414,6 +442,9 @@ var Driftory = /** @class */ (function () {
         var index = this.getFrameIndex();
         if (index > 0) {
             this.goToFrame(index - 1);
+        }
+        else {
+            this.onNoPrevious({});
         }
     };
     return Driftory;
