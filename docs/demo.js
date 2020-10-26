@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var previousButton = document.querySelector('.previous-button');
     var nextButton = document.querySelector('.next-button');
     var hideButton = document.querySelector('.hide-button');
+    var navButton = document.querySelector('.nav-button');
     var frameInfo = document.querySelector('.frame-info');
     if (!container) {
         console.error('Cannot find viewer container');
@@ -102,8 +103,14 @@ document.addEventListener('DOMContentLoaded', function () {
     hideButton === null || hideButton === void 0 ? void 0 : hideButton.addEventListener('click', function () {
         container.classList.toggle('hide');
     });
-    // const comicName = 'comic2.json';
-    var comicName = 'comic.json';
+    navButton === null || navButton === void 0 ? void 0 : navButton.addEventListener('click', function () {
+        var flag = !driftory.getNavEnabled();
+        driftory.setNavEnabled(flag);
+        navButton.textContent = flag ? 'disable nav' : 'enable nav';
+    });
+    // const comicName = 'comic.json';
+    // const comicName = 'comic-no-frames.json';
+    // const comicName = 'comic-hide-until-frame.json';
     fetch(comicName)
         .then(function (response) {
         if (!response.ok) {
@@ -156,6 +163,7 @@ var Driftory = /** @class */ (function () {
         this.frameIndex = -1;
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
+        this.navEnabled = true;
         this.container = args.container;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
@@ -192,7 +200,7 @@ var Driftory = /** @class */ (function () {
                 });
         if (this.viewer) {
             this.viewer.addHandler('canvas-click', function (event) {
-                if (!event || !event.quick || !event.position || !_this.viewer) {
+                if (!event || !event.quick || !event.position || !_this.viewer || !_this.navEnabled) {
                     return;
                 }
                 var point = _this.viewer.viewport.pointFromPixel(event.position);
@@ -216,6 +224,10 @@ var Driftory = /** @class */ (function () {
             var originalScrollHandler_1 = this.viewer.innerTracker.scrollHandler;
             this.viewer.innerTracker.scrollHandler = function (event) {
                 var _a;
+                if (!_this.navEnabled) {
+                    // Returning false stops the browser from scrolling itself.
+                    return false;
+                }
                 if (event.originalEvent.ctrlKey ||
                     event.originalEvent.altKey ||
                     event.originalEvent.metaKey) {
@@ -238,7 +250,7 @@ var Driftory = /** @class */ (function () {
                 return false;
             };
             window.addEventListener('keydown', function (event) {
-                if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+                if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey || !_this.navEnabled) {
                     return;
                 }
                 if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === ' ') {
@@ -255,6 +267,7 @@ var Driftory = /** @class */ (function () {
             });
         }
     };
+    // ----------
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
         if (this.frames.length || this.imageItems.length) {
@@ -342,6 +355,18 @@ var Driftory = /** @class */ (function () {
                 (_a = imageItem.tiledImage) === null || _a === void 0 ? void 0 : _a.setOpacity(_this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
             }
         });
+    };
+    // ----------
+    Driftory.prototype.getNavEnabled = function () {
+        var _a;
+        return this.navEnabled;
+        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
+    };
+    // ----------
+    Driftory.prototype.setNavEnabled = function (flag) {
+        var _a;
+        this.navEnabled = flag;
+        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
     };
     // ----------
     Driftory.prototype.goToFrame = function (index) {

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const previousButton = document.querySelector('.previous-button');
   const nextButton = document.querySelector('.next-button');
   const hideButton = document.querySelector('.hide-button');
+  const navButton = document.querySelector('.nav-button');
   const frameInfo = document.querySelector('.frame-info');
 
   if (!container) {
@@ -55,8 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
     container.classList.toggle('hide');
   });
 
-  // const comicName = 'comic2.json';
+  navButton?.addEventListener('click', () => {
+    const flag = !driftory.getNavEnabled();
+    driftory.setNavEnabled(flag);
+    navButton.textContent = flag ? 'disable nav' : 'enable nav';
+  });
+
   const comicName = 'comic.json';
+  // const comicName = 'comic-no-frames.json';
+  // const comicName = 'comic-hide-until-frame.json';
   fetch(comicName)
     .then((response) => {
       if (!response.ok) {

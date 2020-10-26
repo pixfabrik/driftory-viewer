@@ -53,6 +53,7 @@ export default class Driftory {
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
+  navEnabled: boolean = true;
 
   // ----------
   constructor(args: DriftoryArguments) {
@@ -95,7 +96,7 @@ export default class Driftory {
 
     if (this.viewer) {
       this.viewer.addHandler('canvas-click', (event) => {
-        if (!event || !event.quick || !event.position || !this.viewer) {
+        if (!event || !event.quick || !event.position || !this.viewer || !this.navEnabled) {
           return;
         }
 
@@ -117,6 +118,11 @@ export default class Driftory {
 
       const originalScrollHandler = this.viewer.innerTracker.scrollHandler;
       this.viewer.innerTracker.scrollHandler = (event) => {
+        if (!this.navEnabled) {
+          // Returning false stops the browser from scrolling itself.
+          return false;
+        }
+
         if (
           event.originalEvent.ctrlKey ||
           event.originalEvent.altKey ||
@@ -144,7 +150,7 @@ export default class Driftory {
       };
 
       window.addEventListener('keydown', (event) => {
-        if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+        if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey || !this.navEnabled) {
           return;
         }
 
@@ -162,6 +168,7 @@ export default class Driftory {
     }
   }
 
+  // ----------
   openComic(unsafeComic: Comic | string) {
     if (this.frames.length || this.imageItems.length) {
       console.error(
@@ -270,6 +277,17 @@ export default class Driftory {
         imageItem.tiledImage?.setOpacity(this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
       }
     });
+  }
+
+  // ----------
+  getNavEnabled() {
+    return this.navEnabled;
+  }
+
+  // ----------
+  setNavEnabled(flag: boolean) {
+    this.navEnabled = flag;
+    this.viewer?.setMouseNavEnabled(flag);
   }
 
   // ----------
