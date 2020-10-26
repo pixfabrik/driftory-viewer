@@ -1,7 +1,9 @@
 import Driftory from '../library/driftory';
 
 document.addEventListener('DOMContentLoaded', () => {
+  // We need to cast this to HTMLDivElement because that's what Driftory needs.
   const container = document.querySelector('.driftory-viewer-container') as HTMLDivElement | null;
+
   const startButton = document.querySelector('.start-button');
   const endButton = document.querySelector('.end-button');
   const previousButton = document.querySelector('.previous-button');

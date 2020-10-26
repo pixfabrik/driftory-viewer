@@ -56,6 +56,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var driftory_1 = __importDefault(require("../library/driftory"));
 document.addEventListener('DOMContentLoaded', function () {
+    // We need to cast this to HTMLDivElement because that's what Driftory needs.
     var container = document.querySelector('.driftory-viewer-container');
     var startButton = document.querySelector('.start-button');
     var endButton = document.querySelector('.end-button');
