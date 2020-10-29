@@ -53,6 +53,7 @@ export default class Driftory {
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
   frameIndex: number = -1;
+  frameIndexHint: number = -1;
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
@@ -247,22 +248,22 @@ export default class Driftory {
 
   // ----------
   _startComic() {
-    const frameHandler = () => {
-      const frameIndex = this._figureFrameIndex(false);
-      if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
-        this.frameIndex = frameIndex;
-        this._updateImageVisibility();
-
-        if (this.onFrameChange) {
-          this.onFrameChange({
-            frameIndex,
-            isLastFrame: frameIndex === this.getFrameCount() - 1
-          });
-        }
-      }
-    };
-
     if (this.viewer) {
+      const frameHandler = () => {
+        const frameIndex = this._figureFrameIndex(false);
+        if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
+          this.frameIndex = frameIndex;
+          this._updateImageVisibility();
+
+          if (this.onFrameChange) {
+            this.onFrameChange({
+              frameIndex,
+              isLastFrame: frameIndex === this.getFrameCount() - 1
+            });
+          }
+        }
+      };
+
       this.viewer.addHandler('zoom', frameHandler);
       this.viewer.addHandler('pan', frameHandler);
     }
@@ -300,6 +301,8 @@ export default class Driftory {
       var frame = this.frames[index];
       var bufferFactor = 0.2;
       if (frame) {
+        this.frameIndexHint = index;
+
         var box = frame.clone();
 
         box.width *= 1 + bufferFactor;
@@ -328,6 +331,11 @@ export default class Driftory {
       for (let i = 0; i < this.frames.length; i++) {
         const frame = this.frames[i];
         if (frame.containsPoint(viewportCenter)) {
+          if (this.frameIndexHint === i) {
+            bestIndex = i;
+            break;
+          }
+
           const distance = viewportCenter.squaredDistanceTo(frame.getCenter());
           if (distance < bestDistance) {
             bestDistance = distance;
@@ -336,21 +344,31 @@ export default class Driftory {
         }
       }
     }
+
     return bestIndex;
   }
 
   // ----------
   _getHitFrame(point: OpenSeadragon.Point) {
+    let bestIndex = -1;
+
     if (this.viewer) {
       for (let i = 0; i < this.frames.length; i++) {
         const frame = this.frames[i];
         if (frame.containsPoint(point)) {
-          return i;
+          if (this.frameIndex === i) {
+            bestIndex = i;
+            break;
+          }
+
+          if (bestIndex === -1) {
+            bestIndex = i;
+          }
         }
       }
     }
 
-    return -1;
+    return bestIndex;
   }
 
   // ----------
