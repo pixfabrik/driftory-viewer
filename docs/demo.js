@@ -165,6 +165,7 @@ var Driftory = /** @class */ (function () {
         this.imageItems = [];
         this.frames = [];
         this.frameIndex = -1;
+        this.frameIndexHint = -1;
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
         this.navEnabled = true;
@@ -329,20 +330,20 @@ var Driftory = /** @class */ (function () {
     // ----------
     Driftory.prototype._startComic = function () {
         var _this = this;
-        var frameHandler = function () {
-            var frameIndex = _this._figureFrameIndex(false);
-            if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
-                _this.frameIndex = frameIndex;
-                _this._updateImageVisibility();
-                if (_this.onFrameChange) {
-                    _this.onFrameChange({
-                        frameIndex: frameIndex,
-                        isLastFrame: frameIndex === _this.getFrameCount() - 1
-                    });
-                }
-            }
-        };
         if (this.viewer) {
+            var frameHandler = function () {
+                var frameIndex = _this._figureFrameIndex(false);
+                if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
+                    _this.frameIndex = frameIndex;
+                    _this._updateImageVisibility();
+                    if (_this.onFrameChange) {
+                        _this.onFrameChange({
+                            frameIndex: frameIndex,
+                            isLastFrame: frameIndex === _this.getFrameCount() - 1
+                        });
+                    }
+                }
+            };
             this.viewer.addHandler('zoom', frameHandler);
             this.viewer.addHandler('pan', frameHandler);
         }
@@ -378,6 +379,7 @@ var Driftory = /** @class */ (function () {
             var frame = this.frames[index];
             var bufferFactor = 0.2;
             if (frame) {
+                this.frameIndexHint = index;
                 var box = frame.clone();
                 box.width *= 1 + bufferFactor;
                 box.height *= 1 + bufferFactor;
@@ -401,6 +403,10 @@ var Driftory = /** @class */ (function () {
             for (var i = 0; i < this.frames.length; i++) {
                 var frame = this.frames[i];
                 if (frame.containsPoint(viewportCenter)) {
+                    if (this.frameIndexHint === i) {
+                        bestIndex = i;
+                        break;
+                    }
                     var distance = viewportCenter.squaredDistanceTo(frame.getCenter());
                     if (distance < bestDistance) {
                         bestDistance = distance;
@@ -413,15 +419,22 @@ var Driftory = /** @class */ (function () {
     };
     // ----------
     Driftory.prototype._getHitFrame = function (point) {
+        var bestIndex = -1;
         if (this.viewer) {
             for (var i = 0; i < this.frames.length; i++) {
                 var frame = this.frames[i];
                 if (frame.containsPoint(point)) {
-                    return i;
+                    if (this.frameIndex === i) {
+                        bestIndex = i;
+                        break;
+                    }
+                    if (bestIndex === -1) {
+                        bestIndex = i;
+                    }
                 }
             }
         }
-        return -1;
+        return bestIndex;
     };
     // ----------
     Driftory.prototype.getFrameCount = function () {
