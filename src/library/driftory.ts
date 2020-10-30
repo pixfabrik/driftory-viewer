@@ -1,7 +1,5 @@
 import loadJs from '@dan503/load-js';
 import { Comic } from './Comic.types';
-export * from './Comic.types';
-export * from './openseadragon.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
