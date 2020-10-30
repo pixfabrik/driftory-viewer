@@ -1,7 +1,5 @@
 import loadJs from '@dan503/load-js';
 import { Comic } from './Comic.types';
-export * from './Comic.types';
-export * from './openseadragon.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
 interface OsdRequest {
@@ -34,14 +32,28 @@ type OnComicLoad = (params: {}) => void;
 type OnNoNext = (params: {}) => void;
 type OnNoPrevious = (params: {}) => void;
 
-interface DriftoryArguments {
+export interface DriftoryArguments {
+  /** The HTML DOM element that the Driftory Comic will be rendered in.  */
   container: Container;
+  /**
+   * This library has a dependency on the [OpenSeadragon](https://openseadragon.github.io/) library.
+   *
+   * By default, OpenSeadragon will be loaded from [the JS Deliver CDN](https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/openseadragon.min.js)
+   * while initializing.
+   *
+   * To prevent this, you can use this parameter to provide your own instance of OpenSeaDragon instead.
+   *  */
   OpenSeadragon?: OpenSeadragonType;
+  /** Called whenever driftory navigates to a new frame, whether via clicking, dragging, keys, or API. */
   onFrameChange?: OnFrameChange;
+  /** Called when the comic has finished initializing. */
   onComicLoad?: OnComicLoad;
+  /** Called when the user tries to navigate to the next frame in the sequence
+   *  but there are no frames left to navigate to. */
   onNoNext?: OnNoNext;
+  /** Called when the user tries to navigate to the previous frame in the sequence
+   *  but there are no frames left to navigate to. */
   onNoPrevious?: OnNoPrevious;
-  prefixUrl?: string;
 }
 
 export default class Driftory {
@@ -86,12 +98,11 @@ export default class Driftory {
   }
 
   // ----------
-  _initialize({ container, prefixUrl }: DriftoryArguments) {
+  _initialize({ container }: DriftoryArguments) {
     this.viewer =
       OpenSeadragon &&
       OpenSeadragon({
         element: container,
-        prefixUrl: prefixUrl,
         showNavigationControl: false,
         maxZoomPixelRatio: 10,
         gestureSettingsMouse: {
@@ -173,7 +184,7 @@ export default class Driftory {
     }
   }
 
-  // ----------
+  /** Render the comic on screen */
   openComic(unsafeComic: Comic | string) {
     if (this.frames.length || this.imageItems.length) {
       console.error(
@@ -284,18 +295,18 @@ export default class Driftory {
     });
   }
 
-  // ----------
+  /** Determine if the frame navigation controls are currently able to be used to navigate */
   getNavEnabled() {
     return this.navEnabled;
   }
 
-  // ----------
+  /** Enable / Disable frame navigation controls */
   setNavEnabled(flag: boolean) {
     this.navEnabled = flag;
     this.viewer?.setMouseNavEnabled(flag);
   }
 
-  // ----------
+  /** Navigate to a specific frame via its index number */
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
       var frame = this.frames[index];
@@ -315,7 +326,8 @@ export default class Driftory {
     }
   }
 
-  // ----------
+  /** Get the currently active frame index. This will be whatever frame is in the middle of the
+  screen. If there is no frame in the middle, it'll be whatever frame the user last had there. */
   getFrameIndex() {
     return this.frameIndex;
   }
@@ -371,12 +383,12 @@ export default class Driftory {
     return bestIndex;
   }
 
-  // ----------
+  /** Return the total number of frames found in the comic sequence */
   getFrameCount() {
     return this.frames.length;
   }
 
-  // ----------
+  /** Navigate to the next frame in the sequence */
   goToNextFrame() {
     let index = this.getFrameIndex();
     if (index < this.frames.length - 1) {
@@ -386,7 +398,7 @@ export default class Driftory {
     }
   }
 
-  // ----------
+  /** Navigate to the previous frame in the sequence */
   goToPreviousFrame() {
     let index = this.getFrameIndex();
     if (index > 0) {
