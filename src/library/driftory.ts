@@ -44,7 +44,7 @@ export interface DriftoryArguments {
    * To prevent this, you can use this parameter to provide your own instance of OpenSeaDragon instead.
    *  */
   OpenSeadragon?: OpenSeadragonType;
-  /** Called whenever driftory navigates to a new frame (excludes when the user drags manually). */
+  /** Called whenever driftory navigates to a new frame, whether via clicking, dragging, keys, or API. */
   onFrameChange?: OnFrameChange;
   /** Called when the comic has finished initializing. */
   onComicLoad?: OnComicLoad;
@@ -54,8 +54,6 @@ export interface DriftoryArguments {
   /** Called when the user tries to navigate to the previous frame in the sequence
    *  but there are no frames left to navigate to. */
   onNoPrevious?: OnNoPrevious;
-  /** @iangilman I'm not 100% sure what this one does, please provide a documentation comment here. */
-  prefixUrl?: string;
 }
 
 export default class Driftory {
@@ -76,10 +74,10 @@ export default class Driftory {
   // ----------
   constructor(args: DriftoryArguments) {
     this.container = args.container;
-    this.onFrameChange = args.onFrameChange || function () { };
-    this.onComicLoad = args.onComicLoad || function () { };
-    this.onNoNext = args.onNoNext || function () { };
-    this.onNoPrevious = args.onNoPrevious || function () { };
+    this.onFrameChange = args.onFrameChange || function () {};
+    this.onComicLoad = args.onComicLoad || function () {};
+    this.onNoNext = args.onNoNext || function () {};
+    this.onNoPrevious = args.onNoPrevious || function () {};
 
     if (args.OpenSeadragon) {
       OpenSeadragon = args.OpenSeadragon;
@@ -100,12 +98,11 @@ export default class Driftory {
   }
 
   // ----------
-  _initialize({ container, prefixUrl }: DriftoryArguments) {
+  _initialize({ container }: DriftoryArguments) {
     this.viewer =
       OpenSeadragon &&
       OpenSeadragon({
         element: container,
-        prefixUrl: prefixUrl,
         showNavigationControl: false,
         maxZoomPixelRatio: 10,
         gestureSettingsMouse: {
@@ -309,7 +306,7 @@ export default class Driftory {
     this.viewer?.setMouseNavEnabled(flag);
   }
 
-  /** Navigate to a specific frame via it's index number */
+  /** Navigate to a specific frame via its index number */
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
       var frame = this.frames[index];
@@ -329,7 +326,8 @@ export default class Driftory {
     }
   }
 
-  /** Get the currently active frame index (if there is one) */
+  /** Get the currently active frame index. This will be whatever frame is in the middle of the
+  screen. If there is no frame in the middle, it'll be whatever frame the user last had there. */
   getFrameIndex() {
     return this.frameIndex;
   }
@@ -390,7 +388,7 @@ export default class Driftory {
     return this.frames.length;
   }
 
-  /** Navigating to the next frame in the sequence */
+  /** Navigate to the next frame in the sequence */
   goToNextFrame() {
     let index = this.getFrameIndex();
     if (index < this.frames.length - 1) {
@@ -400,7 +398,7 @@ export default class Driftory {
     }
   }
 
-  /** Navigating to the previous frame in the sequence */
+  /** Navigate to the previous frame in the sequence */
   goToPreviousFrame() {
     let index = this.getFrameIndex();
     if (index > 0) {

@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const driftory = new Driftory({
     container,
-    prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/',
     onComicLoad: () => {
       console.log('loaded!');
     },

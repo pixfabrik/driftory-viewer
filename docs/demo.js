@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     var driftory = new driftory_1.default({
         container: container,
-        prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@2.4/build/openseadragon/images/',
         onComicLoad: function () {
             console.log('loaded!');
         },
@@ -130,29 +129,13 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(function (error) { return console.error(error); });
 });
 
-},{"../library/driftory":4}],3:[function(require,module,exports){
+},{"../library/driftory":3}],3:[function(require,module,exports){
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-
-},{}],4:[function(require,module,exports){
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var load_js_1 = __importDefault(require("@dan503/load-js"));
-__exportStar(require("./Comic.types"), exports);
-__exportStar(require("./openseadragon.types"), exports);
 var OpenSeadragon;
 var osdRequest;
 var osdPromise = new Promise(function (resolve, reject) {
@@ -192,12 +175,11 @@ var Driftory = /** @class */ (function () {
     // ----------
     Driftory.prototype._initialize = function (_a) {
         var _this = this;
-        var container = _a.container, prefixUrl = _a.prefixUrl;
+        var container = _a.container;
         this.viewer =
             OpenSeadragon &&
                 OpenSeadragon({
                     element: container,
-                    prefixUrl: prefixUrl,
                     showNavigationControl: false,
                     maxZoomPixelRatio: 10,
                     gestureSettingsMouse: {
@@ -273,7 +255,7 @@ var Driftory = /** @class */ (function () {
             });
         }
     };
-    // ----------
+    /** Render the comic on screen */
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
         if (this.frames.length || this.imageItems.length) {
@@ -362,17 +344,17 @@ var Driftory = /** @class */ (function () {
             }
         });
     };
-    // ----------
+    /** Determine if the frame navigation controls are currently able to be used to navigate */
     Driftory.prototype.getNavEnabled = function () {
         return this.navEnabled;
     };
-    // ----------
+    /** Enable / Disable frame navigation controls */
     Driftory.prototype.setNavEnabled = function (flag) {
         var _a;
         this.navEnabled = flag;
         (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
     };
-    // ----------
+    /** Navigate to a specific frame via its index number */
     Driftory.prototype.goToFrame = function (index) {
         var _a;
         if (this.getFrameIndex() !== index) {
@@ -389,7 +371,8 @@ var Driftory = /** @class */ (function () {
             }
         }
     };
-    // ----------
+    /** Get the currently active frame index. This will be whatever frame is in the middle of the
+    screen. If there is no frame in the middle, it'll be whatever frame the user last had there. */
     Driftory.prototype.getFrameIndex = function () {
         return this.frameIndex;
     };
@@ -436,11 +419,11 @@ var Driftory = /** @class */ (function () {
         }
         return bestIndex;
     };
-    // ----------
+    /** Return the total number of frames found in the comic sequence */
     Driftory.prototype.getFrameCount = function () {
         return this.frames.length;
     };
-    // ----------
+    /** Navigate to the next frame in the sequence */
     Driftory.prototype.goToNextFrame = function () {
         var index = this.getFrameIndex();
         if (index < this.frames.length - 1) {
@@ -450,7 +433,7 @@ var Driftory = /** @class */ (function () {
             this.onNoNext({});
         }
     };
-    // ----------
+    /** Navigate to the previous frame in the sequence */
     Driftory.prototype.goToPreviousFrame = function () {
         var index = this.getFrameIndex();
         if (index > 0) {
@@ -464,11 +447,6 @@ var Driftory = /** @class */ (function () {
 }());
 exports.default = Driftory;
 
-},{"./Comic.types":3,"./openseadragon.types":5,"@dan503/load-js":1}],5:[function(require,module,exports){
-"use strict";
-// Type definitions is a manual copy of @types/openseadragon
-Object.defineProperty(exports, "__esModule", { value: true });
-
-},{}]},{},[2])
+},{"@dan503/load-js":1}]},{},[2])
 
 //# sourceMappingURL=demo.js.map
