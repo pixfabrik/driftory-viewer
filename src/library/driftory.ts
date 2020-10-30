@@ -32,7 +32,7 @@ type OnComicLoad = (params: {}) => void;
 type OnNoNext = (params: {}) => void;
 type OnNoPrevious = (params: {}) => void;
 
-interface DriftoryArguments {
+export interface DriftoryArguments {
   /** The HTML DOM element that the Driftory Comic will be rendered in.  */
   container: Container;
   /**
