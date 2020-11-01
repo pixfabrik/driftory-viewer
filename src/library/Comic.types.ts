@@ -23,8 +23,10 @@ export interface Item {
   width: number;
   height: number;
   url: string;
-  fileName: string;
-  hideUntilFrame: number;
+  originalName: string;
+  originalWidth: number;
+  originalHeight: number;
+  hideUntilFrame?: number;
 }
 
 export interface Frame {
