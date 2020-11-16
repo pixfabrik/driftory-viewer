@@ -70,6 +70,7 @@ export default class Driftory {
   scrollDelay: number = 2000;
   viewer?: ViewerType;
   navEnabled: boolean = true;
+  comicLoaded: boolean = false;
 
   // ----------
   constructor(args: DriftoryArguments) {
@@ -111,6 +112,28 @@ export default class Driftory {
       });
 
     if (this.viewer) {
+      const frameHandler = () => {
+        if (!this.comicLoaded) {
+          return;
+        }
+
+        const frameIndex = this._figureFrameIndex(false);
+        if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
+          this.frameIndex = frameIndex;
+          this._updateImageVisibility();
+
+          if (this.onFrameChange) {
+            this.onFrameChange({
+              frameIndex,
+              isLastFrame: frameIndex === this.getFrameCount() - 1
+            });
+          }
+        }
+      };
+
+      this.viewer.addHandler('zoom', frameHandler);
+      this.viewer.addHandler('pan', frameHandler);
+
       this.viewer.addHandler('canvas-click', (event) => {
         if (!event || !event.quick || !event.position || !this.viewer || !this.navEnabled) {
           return;
@@ -187,11 +210,7 @@ export default class Driftory {
   /** Render the comic on screen */
   openComic(unsafeComic: Comic | string) {
     if (this.frames.length || this.imageItems.length) {
-      console.error(
-        'Currently the Driftory viewer is not set up to load a second comic after the first.'
-      );
-
-      return;
+      this.closeComic();
     }
 
     const { comic } =
@@ -257,28 +276,20 @@ export default class Driftory {
     });
   }
 
+  /** Remove the comic from the screen */
+  closeComic() {
+    this.imageItems = [];
+    this.frames = [];
+    this.frameIndex = -1;
+    this.frameIndexHint = -1;
+    this.lastScrollTime = 0;
+    this.comicLoaded = false;
+    this.viewer?.close();
+  }
+
   // ----------
   _startComic() {
-    if (this.viewer) {
-      const frameHandler = () => {
-        const frameIndex = this._figureFrameIndex(false);
-        if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
-          this.frameIndex = frameIndex;
-          this._updateImageVisibility();
-
-          if (this.onFrameChange) {
-            this.onFrameChange({
-              frameIndex,
-              isLastFrame: frameIndex === this.getFrameCount() - 1
-            });
-          }
-        }
-      };
-
-      this.viewer.addHandler('zoom', frameHandler);
-      this.viewer.addHandler('pan', frameHandler);
-    }
-
+    this.comicLoaded = true;
     this.goToFrame(0);
 
     if (this.onComicLoad) {

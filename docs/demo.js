@@ -55,6 +55,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var driftory_1 = __importDefault(require("../library/driftory"));
+var comicNames = [
+    'comic.json',
+    'comic-no-frames.json'
+    // 'comic-hide-until-frame.json'
+];
+var comicIndex = 0;
+var driftory;
+// ----------
+function openComic() {
+    var comicName = comicNames[comicIndex];
+    fetch(comicName)
+        .then(function (response) {
+        if (!response.ok) {
+            console.error(response);
+            throw new Error('Failed to load ' + comicName);
+        }
+        return response.json();
+    })
+        .then(function (json) {
+        // console.log(json);
+        driftory.openComic(json);
+    })
+        .catch(function (error) { return console.error(error); });
+}
+// ----------
 document.addEventListener('DOMContentLoaded', function () {
     // We need to cast this to HTMLDivElement because that's what Driftory needs.
     var container = document.querySelector('.driftory-viewer-container');
@@ -64,12 +89,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var nextButton = document.querySelector('.next-button');
     var hideButton = document.querySelector('.hide-button');
     var navButton = document.querySelector('.nav-button');
+    var nextComicButton = document.querySelector('.next-comic-button');
+    var closeComicButton = document.querySelector('.close-comic-button');
     var frameInfo = document.querySelector('.frame-info');
     if (!container) {
         console.error('Cannot find viewer container');
         return;
     }
-    var driftory = new driftory_1.default({
+    driftory = new driftory_1.default({
         container: container,
         onComicLoad: function () {
             console.log('loaded!');
@@ -111,22 +138,14 @@ document.addEventListener('DOMContentLoaded', function () {
         driftory.setNavEnabled(flag);
         navButton.textContent = flag ? 'disable nav' : 'enable nav';
     });
-    var comicName = 'comic.json';
-    // const comicName = 'comic-no-frames.json';
-    // const comicName = 'comic-hide-until-frame.json';
-    fetch(comicName)
-        .then(function (response) {
-        if (!response.ok) {
-            console.error(response);
-            throw new Error('Failed to load ' + comicName);
-        }
-        return response.json();
-    })
-        .then(function (json) {
-        // console.log(json);
-        driftory.openComic(json);
-    })
-        .catch(function (error) { return console.error(error); });
+    nextComicButton === null || nextComicButton === void 0 ? void 0 : nextComicButton.addEventListener('click', function () {
+        comicIndex = (comicIndex + 1) % comicNames.length;
+        openComic();
+    });
+    closeComicButton === null || closeComicButton === void 0 ? void 0 : closeComicButton.addEventListener('click', function () {
+        driftory.closeComic();
+    });
+    openComic();
 });
 
 },{"../library/driftory":3}],3:[function(require,module,exports){
@@ -152,6 +171,7 @@ var Driftory = /** @class */ (function () {
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
         this.navEnabled = true;
+        this.comicLoaded = false;
         this.container = args.container;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
@@ -187,6 +207,24 @@ var Driftory = /** @class */ (function () {
                     }
                 });
         if (this.viewer) {
+            var frameHandler = function () {
+                if (!_this.comicLoaded) {
+                    return;
+                }
+                var frameIndex = _this._figureFrameIndex(false);
+                if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
+                    _this.frameIndex = frameIndex;
+                    _this._updateImageVisibility();
+                    if (_this.onFrameChange) {
+                        _this.onFrameChange({
+                            frameIndex: frameIndex,
+                            isLastFrame: frameIndex === _this.getFrameCount() - 1
+                        });
+                    }
+                }
+            };
+            this.viewer.addHandler('zoom', frameHandler);
+            this.viewer.addHandler('pan', frameHandler);
             this.viewer.addHandler('canvas-click', function (event) {
                 if (!event || !event.quick || !event.position || !_this.viewer || !_this.navEnabled) {
                     return;
@@ -259,8 +297,7 @@ var Driftory = /** @class */ (function () {
     Driftory.prototype.openComic = function (unsafeComic) {
         var _this = this;
         if (this.frames.length || this.imageItems.length) {
-            console.error('Currently the Driftory viewer is not set up to load a second comic after the first.');
-            return;
+            this.closeComic();
         }
         var comic = (typeof unsafeComic === 'string' ? JSON.parse(unsafeComic) : unsafeComic).comic;
         osdPromise.then(function () {
@@ -309,26 +346,20 @@ var Driftory = /** @class */ (function () {
             }
         });
     };
+    /** Remove the comic from the screen */
+    Driftory.prototype.closeComic = function () {
+        var _a;
+        this.imageItems = [];
+        this.frames = [];
+        this.frameIndex = -1;
+        this.frameIndexHint = -1;
+        this.lastScrollTime = 0;
+        this.comicLoaded = false;
+        (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.close();
+    };
     // ----------
     Driftory.prototype._startComic = function () {
-        var _this = this;
-        if (this.viewer) {
-            var frameHandler = function () {
-                var frameIndex = _this._figureFrameIndex(false);
-                if (frameIndex !== -1 && frameIndex !== _this.frameIndex) {
-                    _this.frameIndex = frameIndex;
-                    _this._updateImageVisibility();
-                    if (_this.onFrameChange) {
-                        _this.onFrameChange({
-                            frameIndex: frameIndex,
-                            isLastFrame: frameIndex === _this.getFrameCount() - 1
-                        });
-                    }
-                }
-            };
-            this.viewer.addHandler('zoom', frameHandler);
-            this.viewer.addHandler('pan', frameHandler);
-        }
+        this.comicLoaded = true;
         this.goToFrame(0);
         if (this.onComicLoad) {
             this.onComicLoad({});
