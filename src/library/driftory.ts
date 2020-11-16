@@ -20,12 +20,37 @@ const osdPromise = new Promise((resolve, reject) => {
   osdRequest = { resolve, reject };
 });
 
+// Part of the external API
+interface ImageInfo {
+  url: string;
+  bounds: OpenSeadragon.Rect;
+  hideUntilFrame?: number;
+  index: number;
+  frameFillFactor: number;
+}
+
+// Part of the external API
+interface FrameInfo {
+  images: Array<ImageInfo>;
+  bounds: OpenSeadragon.Rect;
+}
+
+// Used internally
 interface ImageItem {
+  url: string;
+  bounds: OpenSeadragon.Rect;
   hideUntilFrame?: number;
   tiledImage?: OpenSeadragon.TiledImage;
 }
 
-type Frame = OpenSeadragon.Rect;
+// Used internally
+interface FrameImage {
+  imageItem: ImageItem;
+  imageIndex: number;
+  frameFillFactor: number;
+}
+
+type Frame = { images: Array<FrameImage>; bounds: OpenSeadragon.Rect };
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
@@ -70,6 +95,7 @@ export default class Driftory {
   scrollDelay: number = 2000;
   viewer?: ViewerType;
   navEnabled: boolean = true;
+  comicLoaded: boolean = false;
 
   // ----------
   constructor(args: DriftoryArguments) {
@@ -111,6 +137,28 @@ export default class Driftory {
       });
 
     if (this.viewer) {
+      const frameHandler = () => {
+        if (!this.comicLoaded) {
+          return;
+        }
+
+        const frameIndex = this._figureFrameIndex(false);
+        if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
+          this.frameIndex = frameIndex;
+          this._updateImageVisibility();
+
+          if (this.onFrameChange) {
+            this.onFrameChange({
+              frameIndex,
+              isLastFrame: frameIndex === this.getFrameCount() - 1
+            });
+          }
+        }
+      };
+
+      this.viewer.addHandler('zoom', frameHandler);
+      this.viewer.addHandler('pan', frameHandler);
+
       this.viewer.addHandler('canvas-click', (event) => {
         if (!event || !event.quick || !event.position || !this.viewer || !this.navEnabled) {
           return;
@@ -187,11 +235,7 @@ export default class Driftory {
   /** Render the comic on screen */
   openComic(unsafeComic: Comic | string) {
     if (this.frames.length || this.imageItems.length) {
-      console.error(
-        'Currently the Driftory viewer is not set up to load a second comic after the first.'
-      );
-
-      return;
+      this.closeComic();
     }
 
     const { comic } =
@@ -203,26 +247,39 @@ export default class Driftory {
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
-            return new OpenSeadragon!.Rect(
-              frame.x - frame.width / 2,
-              frame.y - frame.height / 2,
-              frame.width,
-              frame.height
-            );
+            return {
+              images: [],
+              bounds: new OpenSeadragon!.Rect(
+                frame.x - frame.width / 2,
+                frame.y - frame.height / 2,
+                frame.width,
+                frame.height
+              )
+            };
           });
         } else {
           this.frames = comic.body.items.map((item) => {
-            return new OpenSeadragon!.Rect(
-              item.x - item.width / 2,
-              item.y - item.height / 2,
-              item.width,
-              item.height
-            );
+            return {
+              images: [],
+              bounds: new OpenSeadragon!.Rect(
+                item.x - item.width / 2,
+                item.y - item.height / 2,
+                item.width,
+                item.height
+              )
+            };
           });
         }
 
         comic.body.items.forEach((item, i) => {
           const imageItem: ImageItem = {
+            url: item.url,
+            bounds: new OpenSeadragon!.Rect(
+              item.x - item.width / 2,
+              item.y - item.height / 2,
+              item.width,
+              item.height
+            ),
             hideUntilFrame: item.hideUntilFrame
           };
 
@@ -230,9 +287,9 @@ export default class Driftory {
 
           this.viewer?.addTiledImage({
             preload: true,
-            x: item.x - item.width / 2,
-            y: item.y - item.height / 2,
-            width: item.width,
+            x: imageItem.bounds.x,
+            y: imageItem.bounds.y,
+            width: imageItem.bounds.width,
             success: (event: any) => {
               imageItem.tiledImage = event.item as OpenSeadragon.TiledImage;
               this._updateImageVisibility();
@@ -253,32 +310,61 @@ export default class Driftory {
             }
           });
         });
+
+        this.frames.forEach((frame, frameIndex) => {
+          const frameArea = frame.bounds.width * frame.bounds.height;
+
+          this.imageItems.forEach((imageItem, imageIndex) => {
+            if (!imageItem.hideUntilFrame || imageItem.hideUntilFrame <= frameIndex) {
+              const intersection = frame.bounds.intersection(imageItem.bounds);
+              if (intersection) {
+                const area = intersection.width * intersection.height;
+
+                frame.images.push({ imageItem, imageIndex, frameFillFactor: area / frameArea });
+              }
+            }
+          });
+
+          // Sort primary image first, based on how much it fills the frame. On a tie, prefer later images.
+          // TODO: Account for images hidden under other images better.
+          frame.images.sort((a, b) => {
+            if (a.frameFillFactor > b.frameFillFactor) {
+              return -1;
+            }
+
+            if (a.frameFillFactor < b.frameFillFactor) {
+              return 1;
+            }
+
+            if (a.imageIndex > b.imageIndex) {
+              return -1;
+            }
+
+            if (a.imageIndex < b.imageIndex) {
+              return 1;
+            }
+
+            return 0;
+          });
+        });
       }
     });
   }
 
+  /** Remove the comic from the screen */
+  closeComic() {
+    this.imageItems = [];
+    this.frames = [];
+    this.frameIndex = -1;
+    this.frameIndexHint = -1;
+    this.lastScrollTime = 0;
+    this.comicLoaded = false;
+    this.viewer?.close();
+  }
+
   // ----------
   _startComic() {
-    if (this.viewer) {
-      const frameHandler = () => {
-        const frameIndex = this._figureFrameIndex(false);
-        if (frameIndex !== -1 && frameIndex !== this.frameIndex) {
-          this.frameIndex = frameIndex;
-          this._updateImageVisibility();
-
-          if (this.onFrameChange) {
-            this.onFrameChange({
-              frameIndex,
-              isLastFrame: frameIndex === this.getFrameCount() - 1
-            });
-          }
-        }
-      };
-
-      this.viewer.addHandler('zoom', frameHandler);
-      this.viewer.addHandler('pan', frameHandler);
-    }
-
+    this.comicLoaded = true;
     this.goToFrame(0);
 
     if (this.onComicLoad) {
@@ -314,12 +400,12 @@ export default class Driftory {
       if (frame) {
         this.frameIndexHint = index;
 
-        var box = frame.clone();
+        var box = frame.bounds.clone();
 
         box.width *= 1 + bufferFactor;
         box.height *= 1 + bufferFactor;
-        box.x -= frame.width * bufferFactor * 0.5;
-        box.y -= frame.height * bufferFactor * 0.5;
+        box.x -= frame.bounds.width * bufferFactor * 0.5;
+        box.y -= frame.bounds.height * bufferFactor * 0.5;
 
         this.viewer?.viewport.fitBounds(box);
       }
@@ -342,13 +428,15 @@ export default class Driftory {
 
       for (let i = 0; i < this.frames.length; i++) {
         const frame = this.frames[i];
-        if (frame.containsPoint(viewportCenter)) {
+        const bounds = frame.bounds;
+
+        if (bounds.containsPoint(viewportCenter)) {
           if (this.frameIndexHint === i) {
             bestIndex = i;
             break;
           }
 
-          const distance = viewportCenter.squaredDistanceTo(frame.getCenter());
+          const distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
           if (distance < bestDistance) {
             bestDistance = distance;
             bestIndex = i;
@@ -367,7 +455,9 @@ export default class Driftory {
     if (this.viewer) {
       for (let i = 0; i < this.frames.length; i++) {
         const frame = this.frames[i];
-        if (frame.containsPoint(point)) {
+        const bounds = frame.bounds;
+
+        if (bounds.containsPoint(point)) {
           if (this.frameIndex === i) {
             bestIndex = i;
             break;
@@ -386,6 +476,34 @@ export default class Driftory {
   /** Return the total number of frames found in the comic sequence */
   getFrameCount() {
     return this.frames.length;
+  }
+
+  /** Return an object with information about the frame at the specified index */
+  getFrame(frameIndex: number): FrameInfo | null {
+    const frame = this.frames[frameIndex];
+    if (!frame) {
+      return null;
+    }
+
+    return {
+      bounds: frame.bounds.clone(),
+      images: frame.images.map((frameImage) => {
+        const imageItem = frameImage.imageItem;
+
+        return {
+          url: imageItem.url,
+          bounds: imageItem.bounds.clone(),
+          hideUntilFrame: imageItem.hideUntilFrame,
+          frameFillFactor: frameImage.frameFillFactor,
+          index: frameImage.imageIndex
+        };
+      })
+    };
+  }
+
+  /** Return the total number of images found in the comic */
+  getImageCount() {
+    return this.imageItems.length;
   }
 
   /** Navigate to the next frame in the sequence */
