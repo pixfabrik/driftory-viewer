@@ -1,9 +1,9 @@
 import Driftory from '../library/driftory';
 
 const comicNames = [
+  // 'comic-hide-until-frame.json',
   'comic.json',
   'comic-no-frames.json'
-  // 'comic-hide-until-frame.json'
 ];
 
 let comicIndex = 0;
@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const navButton = document.querySelector('.nav-button');
   const nextComicButton = document.querySelector('.next-comic-button');
   const closeComicButton = document.querySelector('.close-comic-button');
+  const listImagesButton = document.querySelector('.list-images-button');
   const frameInfo = document.querySelector('.frame-info');
+  const imageList = document.querySelector('.image-list');
 
   if (!container) {
     console.error('Cannot find viewer container');
@@ -104,6 +106,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   closeComicButton?.addEventListener('click', () => {
     driftory.closeComic();
+  });
+
+  listImagesButton?.addEventListener('click', () => {
+    const count = driftory.getFrameCount();
+    for (let i = 0; i < count; i++) {
+      const frame = driftory.getFrame(i);
+      if (frame?.images.length) {
+        const frameImage = frame.images[0];
+        const image = document.createElement('img');
+        image.src = frameImage.url;
+        imageList.appendChild(image);
+      }
+    }
   });
 
   openComic();

@@ -42,3 +42,19 @@ body {
   margin-left: 20px;
   color: white;
 }
+
+.image-list {
+  position: absolute;
+  width: 100vw;
+  height: calc(100vh - 30px);
+  left: 0;
+  top: 30px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.image-list img {
+  max-height: 200px;
+  margin: 10px;
+  border: white 1px solid;
+}
