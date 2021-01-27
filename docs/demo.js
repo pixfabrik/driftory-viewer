@@ -169,6 +169,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var load_js_1 = __importDefault(require("@dan503/load-js"));
+var util_1 = require("./util");
 var OpenSeadragon;
 var osdRequest;
 var osdPromise = new Promise(function (resolve, reject) {
@@ -180,8 +181,11 @@ var Driftory = /** @class */ (function () {
         var _this = this;
         this.imageItems = [];
         this.frames = [];
+        this.framePath = [];
         this.frameIndex = -1;
         this.frameIndexHint = -1;
+        this.scrollValue = 0;
+        this.maxScrollValue = 0;
         this.lastScrollTime = 0;
         this.scrollDelay = 2000;
         this.navEnabled = true;
@@ -273,18 +277,18 @@ var Driftory = /** @class */ (function () {
                     event.originalEvent.metaKey) {
                     return originalScrollHandler_1.call((_a = _this.viewer) === null || _a === void 0 ? void 0 : _a.innerTracker, event);
                 }
-                var now = Date.now();
-                // console.log(event.scroll, now, now - this.lastScrollTime);
-                if (now - _this.lastScrollTime < _this.scrollDelay) {
-                    // Returning false stops the browser from scrolling itself.
-                    return false;
-                }
-                _this.lastScrollTime = now;
-                if (event.scroll < 0) {
-                    _this.goToNextFrame();
-                }
-                else {
-                    _this.goToPreviousFrame();
+                _this.scrollValue = util_1.clamp(_this.scrollValue - event.scroll * 0.03, 0, _this.maxScrollValue);
+                if (_this.viewer) {
+                    for (var i = 0; i < _this.framePath.length - 1; i++) {
+                        var a = _this.framePath[i];
+                        var b = _this.framePath[i + 1];
+                        if (_this.scrollValue >= a.scroll && _this.scrollValue <= b.scroll) {
+                            var factor = util_1.mapLinear(_this.scrollValue, a.scroll, b.scroll, 0, 1);
+                            var newBounds = new OpenSeadragon.Rect(util_1.mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x), util_1.mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y), util_1.mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width), util_1.mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height));
+                            _this.viewer.viewport.fitBounds(newBounds, true);
+                            break;
+                        }
+                    }
                 }
                 // Returning false stops the browser from scrolling itself.
                 return false;
@@ -316,6 +320,7 @@ var Driftory = /** @class */ (function () {
         var comic = (typeof unsafeComic === 'string' ? JSON.parse(unsafeComic) : unsafeComic).comic;
         osdPromise.then(function () {
             _this.container.style.backgroundColor = comic.body.backgroundColor;
+            // Get frames
             if (_this.viewer) {
                 if (comic.body.frames) {
                     _this.frames = comic.body.frames.map(function (frame) {
@@ -333,6 +338,29 @@ var Driftory = /** @class */ (function () {
                         };
                     });
                 }
+                // Make frame path
+                _this.framePath = [];
+                var scroll_1 = 0;
+                _this.frames.forEach(function (frame, i) {
+                    var point = frame.bounds.getCenter();
+                    var bounds = _this._getBoundsForFrame(frame);
+                    _this.framePath.push({
+                        scroll: scroll_1,
+                        point: point,
+                        bounds: bounds
+                    });
+                    if (i > 0 && i < _this.frames.length - 1) {
+                        scroll_1 += 0.5;
+                        _this.framePath.push({
+                            scroll: scroll_1,
+                            point: point,
+                            bounds: bounds
+                        });
+                    }
+                    _this.maxScrollValue = scroll_1;
+                    scroll_1++;
+                });
+                // Get image items
                 comic.body.items.forEach(function (item, i) {
                     var _a;
                     var imageItem = {
@@ -402,8 +430,11 @@ var Driftory = /** @class */ (function () {
         var _a;
         this.imageItems = [];
         this.frames = [];
+        this.framePath = [];
         this.frameIndex = -1;
         this.frameIndexHint = -1;
+        this.scrollValue = 0;
+        this.maxScrollValue = 0;
         this.lastScrollTime = 0;
         this.comicLoaded = false;
         (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.close();
@@ -411,6 +442,7 @@ var Driftory = /** @class */ (function () {
     // ----------
     Driftory.prototype._startComic = function () {
         this.comicLoaded = true;
+        this.scrollValue = 0;
         this.goToFrame(0);
         if (this.onComicLoad) {
             this.onComicLoad({});
@@ -441,17 +473,22 @@ var Driftory = /** @class */ (function () {
         var _a;
         if (this.getFrameIndex() !== index) {
             var frame = this.frames[index];
-            var bufferFactor = 0.2;
             if (frame) {
                 this.frameIndexHint = index;
-                var box = frame.bounds.clone();
-                box.width *= 1 + bufferFactor;
-                box.height *= 1 + bufferFactor;
-                box.x -= frame.bounds.width * bufferFactor * 0.5;
-                box.y -= frame.bounds.height * bufferFactor * 0.5;
+                var box = this._getBoundsForFrame(frame);
                 (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.viewport.fitBounds(box);
             }
         }
+    };
+    // ----------
+    Driftory.prototype._getBoundsForFrame = function (frame) {
+        var bufferFactor = 0.2;
+        var box = frame.bounds.clone();
+        box.width *= 1 + bufferFactor;
+        box.height *= 1 + bufferFactor;
+        box.x -= frame.bounds.width * bufferFactor * 0.5;
+        box.y -= frame.bounds.height * bufferFactor * 0.5;
+        return box;
     };
     /** Get the currently active frame index. This will be whatever frame is in the middle of the
     screen. If there is no frame in the middle, it'll be whatever frame the user last had there. */
@@ -555,6 +592,44 @@ var Driftory = /** @class */ (function () {
 }());
 exports.default = Driftory;
 
-},{"@dan503/load-js":1}]},{},[2])
+},{"./util":4,"@dan503/load-js":1}],4:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.clamp = exports.polarToVector = exports.vectorToPolar = exports.mapLinear = void 0;
+// ----------
+function mapLinear(x, a1, a2, b1, b2, clamp) {
+    console.assert(a1 !== a2, 'a1 and a2 must be different');
+    var output = b1 + ((x - a1) * (b2 - b1)) / (a2 - a1);
+    if (clamp) {
+        var min = Math.min(b1, b2);
+        var max = Math.max(b1, b2);
+        return Math.max(min, Math.min(max, output));
+    }
+    return output;
+}
+exports.mapLinear = mapLinear;
+// ----------
+function vectorToPolar(x, y) {
+    return {
+        radians: Math.atan2(y, x),
+        distance: Math.sqrt(x * x + y * y)
+    };
+}
+exports.vectorToPolar = vectorToPolar;
+// ----------
+function polarToVector(radians, distance) {
+    return {
+        x: Math.cos(radians) * distance,
+        y: Math.sin(radians) * distance
+    };
+}
+exports.polarToVector = polarToVector;
+// ----------
+function clamp(x, min, max) {
+    return Math.max(min, Math.min(max, x));
+}
+exports.clamp = clamp;
+
+},{}]},{},[2])
 
 //# sourceMappingURL=demo.js.map

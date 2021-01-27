@@ -1417,6 +1417,7 @@ declare namespace OpenSeadragon {
 export interface OpenSeadragonType {
   (options: OpenSeadragon.Options): OpenSeadragon.Viewer;
   Rect: typeof OpenSeadragon.Rect;
+  Point: typeof OpenSeadragon.Point;
 }
 
 export type ViewerType = OpenSeadragon.Viewer;

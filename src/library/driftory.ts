@@ -1,4 +1,5 @@
 import loadJs from '@dan503/load-js';
+import { mapLinear, clamp } from './util';
 import { Comic } from './Comic.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 
@@ -50,6 +51,13 @@ interface FrameImage {
   frameFillFactor: number;
 }
 
+// Used internally
+interface FramePathItem {
+  scroll: number;
+  point: OpenSeadragon.Point;
+  bounds: OpenSeadragon.Rect;
+}
+
 type Frame = { images: Array<FrameImage>; bounds: OpenSeadragon.Rect };
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
@@ -89,8 +97,11 @@ export default class Driftory {
   onNoPrevious: OnNoPrevious;
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
+  framePath: Array<FramePathItem> = [];
   frameIndex: number = -1;
   frameIndexHint: number = -1;
+  scrollValue: number = 0;
+  maxScrollValue: number = 0;
   lastScrollTime: number = 0;
   scrollDelay: number = 2000;
   viewer?: ViewerType;
@@ -195,18 +206,27 @@ export default class Driftory {
           return originalScrollHandler.call(this.viewer?.innerTracker, event);
         }
 
-        const now = Date.now();
-        // console.log(event.scroll, now, now - this.lastScrollTime);
-        if (now - this.lastScrollTime < this.scrollDelay) {
-          // Returning false stops the browser from scrolling itself.
-          return false;
-        }
+        this.scrollValue = clamp(this.scrollValue - event.scroll * 0.03, 0, this.maxScrollValue);
 
-        this.lastScrollTime = now;
-        if (event.scroll < 0) {
-          this.goToNextFrame();
-        } else {
-          this.goToPreviousFrame();
+        if (this.viewer) {
+          for (let i = 0; i < this.framePath.length - 1; i++) {
+            const a = this.framePath[i];
+            const b = this.framePath[i + 1];
+            if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+              const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
+
+              const newBounds = new OpenSeadragon!.Rect(
+                mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x),
+                mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y),
+                mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width),
+                mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height)
+              );
+
+              this.viewer.viewport.fitBounds(newBounds, true);
+
+              break;
+            }
+          }
         }
 
         // Returning false stops the browser from scrolling itself.
@@ -244,6 +264,7 @@ export default class Driftory {
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
 
+      // Get frames
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
@@ -271,6 +292,34 @@ export default class Driftory {
           });
         }
 
+        // Make frame path
+        this.framePath = [];
+        let scroll = 0;
+        this.frames.forEach((frame, i) => {
+          const point = frame.bounds.getCenter();
+          const bounds = this._getBoundsForFrame(frame);
+
+          this.framePath.push({
+            scroll,
+            point,
+            bounds
+          });
+
+          if (i > 0 && i < this.frames.length - 1) {
+            scroll += 0.5;
+
+            this.framePath.push({
+              scroll,
+              point,
+              bounds
+            });
+          }
+
+          this.maxScrollValue = scroll;
+          scroll++;
+        });
+
+        // Get image items
         comic.body.items.forEach((item, i) => {
           const imageItem: ImageItem = {
             url: item.url,
@@ -355,8 +404,11 @@ export default class Driftory {
   closeComic() {
     this.imageItems = [];
     this.frames = [];
+    this.framePath = [];
     this.frameIndex = -1;
     this.frameIndexHint = -1;
+    this.scrollValue = 0;
+    this.maxScrollValue = 0;
     this.lastScrollTime = 0;
     this.comicLoaded = false;
     this.viewer?.close();
@@ -365,6 +417,7 @@ export default class Driftory {
   // ----------
   _startComic() {
     this.comicLoaded = true;
+    this.scrollValue = 0;
     this.goToFrame(0);
 
     if (this.onComicLoad) {
@@ -396,20 +449,25 @@ export default class Driftory {
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
       var frame = this.frames[index];
-      var bufferFactor = 0.2;
       if (frame) {
         this.frameIndexHint = index;
 
-        var box = frame.bounds.clone();
-
-        box.width *= 1 + bufferFactor;
-        box.height *= 1 + bufferFactor;
-        box.x -= frame.bounds.width * bufferFactor * 0.5;
-        box.y -= frame.bounds.height * bufferFactor * 0.5;
-
+        var box = this._getBoundsForFrame(frame);
         this.viewer?.viewport.fitBounds(box);
       }
     }
+  }
+
+  // ----------
+  _getBoundsForFrame(frame: Frame) {
+    var bufferFactor = 0.2;
+    var box = frame.bounds.clone();
+
+    box.width *= 1 + bufferFactor;
+    box.height *= 1 + bufferFactor;
+    box.x -= frame.bounds.width * bufferFactor * 0.5;
+    box.y -= frame.bounds.height * bufferFactor * 0.5;
+    return box;
   }
 
   /** Get the currently active frame index. This will be whatever frame is in the middle of the
