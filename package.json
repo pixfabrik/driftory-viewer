@@ -27,6 +27,7 @@
   "homepage": "https://github.com/pixfabrik/driftory-viewer#readme",
   "dependencies": {
     "@dan503/load-js": "^1.0.4",
+    "normalize-wheel": "^1.0.1",
     "openseadragon": "^2.4.2"
   },
   "devDependencies": {

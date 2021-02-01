@@ -1,0 +1,12 @@
+// From https://github.com/basilfx/normalize-wheel/blob/master/index.d.ts
+
+declare module 'normalize-wheel' {
+  interface NormalizedWheelEvent {
+    spinX: number;
+    spinY: number;
+    pixelX: number;
+    pixelY: number;
+  }
+  function normalizeWheel(e: WheelEvent): NormalizedWheelEvent;
+  export = normalizeWheel;
+}

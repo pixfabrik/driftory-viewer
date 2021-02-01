@@ -2,6 +2,7 @@ import loadJs from '@dan503/load-js';
 import { mapLinear, clamp } from './util';
 import { Comic } from './Comic.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
+import normalizeWheel from 'normalize-wheel';
 
 interface OsdRequest {
   resolve: (value?: unknown) => void;
@@ -89,6 +90,8 @@ export interface DriftoryArguments {
   onNoPrevious?: OnNoPrevious;
 }
 
+const scrollQuantum = 0.05;
+
 export default class Driftory {
   container: Container;
   onFrameChange: OnFrameChange;
@@ -107,6 +110,7 @@ export default class Driftory {
   viewer?: ViewerType;
   navEnabled: boolean = true;
   comicLoaded: boolean = false;
+  scroll: any = null;
 
   // ----------
   constructor(args: DriftoryArguments) {
@@ -115,6 +119,8 @@ export default class Driftory {
     this.onComicLoad = args.onComicLoad || function () {};
     this.onNoNext = args.onNoNext || function () {};
     this.onNoPrevious = args.onNoPrevious || function () {};
+
+    this._animationFrame = this._animationFrame.bind(this);
 
     if (args.OpenSeadragon) {
       OpenSeadragon = args.OpenSeadragon;
@@ -206,27 +212,20 @@ export default class Driftory {
           return originalScrollHandler.call(this.viewer?.innerTracker, event);
         }
 
-        this.scrollValue = clamp(this.scrollValue - event.scroll * 0.03, 0, this.maxScrollValue);
+        const normalized = normalizeWheel(event.originalEvent as WheelEvent);
 
-        if (this.viewer) {
-          for (let i = 0; i < this.framePath.length - 1; i++) {
-            const a = this.framePath[i];
-            const b = this.framePath[i + 1];
-            if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
-              const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
+        if (!this.scroll || Math.abs(normalized.spinY) > 0.9) {
+          const direction = normalized.spinY < 0 ? -1 : 1;
 
-              const newBounds = new OpenSeadragon!.Rect(
-                mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x),
-                mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y),
-                mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width),
-                mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height)
-              );
+          let target = this.scrollValue + normalized.spinY * 0.5;
+          target = direction < 0 ? Math.floor(target) : Math.ceil(target);
+          target = clamp(target, 0, this.maxScrollValue);
 
-              this.viewer.viewport.fitBounds(newBounds, true);
-
-              break;
-            }
-          }
+          this.scroll = {
+            direction,
+            target,
+            time: Date.now()
+          };
         }
 
         // Returning false stops the browser from scrolling itself.
@@ -250,6 +249,8 @@ export default class Driftory {
         event.stopPropagation();
       });
     }
+
+    this._animationFrame();
   }
 
   /** Render the comic on screen */
@@ -295,7 +296,7 @@ export default class Driftory {
         // Make frame path
         this.framePath = [];
         let scroll = 0;
-        this.frames.forEach((frame, i) => {
+        this.frames.forEach((frame) => {
           const point = frame.bounds.getCenter();
           const bounds = this._getBoundsForFrame(frame);
 
@@ -304,16 +305,6 @@ export default class Driftory {
             point,
             bounds
           });
-
-          if (i > 0 && i < this.frames.length - 1) {
-            scroll += 0.5;
-
-            this.framePath.push({
-              scroll,
-              point,
-              bounds
-            });
-          }
 
           this.maxScrollValue = scroll;
           scroll++;
@@ -432,6 +423,61 @@ export default class Driftory {
         imageItem.tiledImage?.setOpacity(this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
       }
     });
+  }
+
+  // ----------
+  _animationFrame() {
+    requestAnimationFrame(this._animationFrame);
+
+    if (this.scroll) {
+      const epsilon = 0.00001;
+      let amount = Math.abs(this.scroll.target - this.scrollValue) * 0.1;
+      amount = Math.max(amount, epsilon);
+      amount = Math.min(amount, scrollQuantum) * this.scroll.direction;
+      this.scrollValue += amount;
+
+      if (this.scroll.direction > 0) {
+        if (this.scrollValue >= this.scroll.target - epsilon) {
+          this.scrollValue = this.scroll.target;
+        }
+      } else {
+        if (this.scrollValue <= this.scroll.target + epsilon) {
+          this.scrollValue = this.scroll.target;
+        }
+      }
+
+      this._updateForScrollValue();
+
+      const timeDiff = Date.now() - this.scroll.time;
+      // console.log(timeDiff, this.scrollValue, this.scroll.target);
+      if (this.scrollValue === this.scroll.target && timeDiff > 20) {
+        delete this.scroll;
+      }
+    }
+  }
+
+  // ----------
+  _updateForScrollValue() {
+    if (this.viewer) {
+      for (let i = 0; i < this.framePath.length - 1; i++) {
+        const a = this.framePath[i];
+        const b = this.framePath[i + 1];
+        if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+          const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
+
+          const newBounds = new OpenSeadragon!.Rect(
+            mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x),
+            mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y),
+            mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width),
+            mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height)
+          );
+
+          this.viewer.viewport.fitBounds(newBounds, true);
+
+          break;
+        }
+      }
+    }
   }
 
   /** Determine if the frame navigation controls are currently able to be used to navigate */
