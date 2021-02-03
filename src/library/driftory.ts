@@ -1,6 +1,8 @@
 import loadJs from '@dan503/load-js';
+import { mapLinear, clamp, sign } from './util';
 import { Comic } from './Comic.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
+import normalizeWheel from 'normalize-wheel';
 
 interface OsdRequest {
   resolve: (value?: unknown) => void;
@@ -39,8 +41,10 @@ interface FrameInfo {
 interface ImageItem {
   url: string;
   bounds: OpenSeadragon.Rect;
+  targetOpacity: number;
   hideUntilFrame?: number;
   tiledImage?: OpenSeadragon.TiledImage;
+  preloadTiledImage?: OpenSeadragon.TiledImage;
 }
 
 // Used internally
@@ -48,6 +52,13 @@ interface FrameImage {
   imageItem: ImageItem;
   imageIndex: number;
   frameFillFactor: number;
+}
+
+// Used internally
+interface FramePathItem {
+  scroll: number;
+  point: OpenSeadragon.Point;
+  bounds: OpenSeadragon.Rect;
 }
 
 type Frame = { images: Array<FrameImage>; bounds: OpenSeadragon.Rect };
@@ -81,6 +92,8 @@ export interface DriftoryArguments {
   onNoPrevious?: OnNoPrevious;
 }
 
+const scrollQuantum = 0.05;
+
 export default class Driftory {
   container: Container;
   onFrameChange: OnFrameChange;
@@ -89,13 +102,14 @@ export default class Driftory {
   onNoPrevious: OnNoPrevious;
   imageItems: Array<ImageItem> = [];
   frames: Array<Frame> = [];
+  framePath: Array<FramePathItem> = [];
   frameIndex: number = -1;
   frameIndexHint: number = -1;
-  lastScrollTime: number = 0;
-  scrollDelay: number = 2000;
+  maxScrollValue: number = 0;
   viewer?: ViewerType;
   navEnabled: boolean = true;
   comicLoaded: boolean = false;
+  scroll: any = null;
 
   // ----------
   constructor(args: DriftoryArguments) {
@@ -104,6 +118,8 @@ export default class Driftory {
     this.onComicLoad = args.onComicLoad || function () {};
     this.onNoNext = args.onNoNext || function () {};
     this.onNoPrevious = args.onNoPrevious || function () {};
+
+    this._animationFrame = this._animationFrame.bind(this);
 
     if (args.OpenSeadragon) {
       OpenSeadragon = args.OpenSeadragon;
@@ -195,18 +211,26 @@ export default class Driftory {
           return originalScrollHandler.call(this.viewer?.innerTracker, event);
         }
 
-        const now = Date.now();
-        // console.log(event.scroll, now, now - this.lastScrollTime);
-        if (now - this.lastScrollTime < this.scrollDelay) {
-          // Returning false stops the browser from scrolling itself.
-          return false;
-        }
+        const normalized = normalizeWheel(event.originalEvent as WheelEvent);
 
-        this.lastScrollTime = now;
-        if (event.scroll < 0) {
-          this.goToNextFrame();
-        } else {
-          this.goToPreviousFrame();
+        if (!this.scroll || Math.abs(normalized.spinY) > 0.9) {
+          const direction = normalized.spinY < 0 ? -1 : 1;
+
+          if (!this.scroll || this.scroll.direction !== direction) {
+            this.scroll = {
+              value: this.frameIndex,
+              startIndex: this.frameIndex,
+              startBounds: this.viewer?.viewport.getBounds(true)
+            };
+          }
+
+          let target = this.scroll.value + normalized.spinY * 0.5;
+          target = direction < 0 ? Math.floor(target) : Math.ceil(target);
+          target = clamp(target, 0, this.maxScrollValue);
+
+          this.scroll.direction = direction;
+          this.scroll.target = target;
+          this.scroll.time = Date.now();
         }
 
         // Returning false stops the browser from scrolling itself.
@@ -230,6 +254,8 @@ export default class Driftory {
         event.stopPropagation();
       });
     }
+
+    this._animationFrame();
   }
 
   /** Render the comic on screen */
@@ -244,6 +270,7 @@ export default class Driftory {
     osdPromise.then(() => {
       this.container.style.backgroundColor = comic.body.backgroundColor;
 
+      // Get frames
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
@@ -271,6 +298,24 @@ export default class Driftory {
           });
         }
 
+        // Make frame path
+        this.framePath = [];
+        let scroll = 0;
+        this.frames.forEach((frame) => {
+          const point = frame.bounds.getCenter();
+          const bounds = this._getBoundsForFrame(frame);
+
+          this.framePath.push({
+            scroll,
+            point,
+            bounds
+          });
+
+          this.maxScrollValue = scroll;
+          scroll++;
+        });
+
+        // Get image items
         comic.body.items.forEach((item, i) => {
           const imageItem: ImageItem = {
             url: item.url,
@@ -280,13 +325,26 @@ export default class Driftory {
               item.width,
               item.height
             ),
+            targetOpacity: 1,
             hideUntilFrame: item.hideUntilFrame
           };
 
           this.imageItems.push(imageItem);
 
+          const tileSource = {
+            type: 'legacy-image-pyramid',
+            levels: [
+              {
+                url: item.url,
+                width: item.width,
+                height: item.height
+              }
+            ]
+          };
+
           this.viewer?.addTiledImage({
             preload: true,
+            opacity: 0,
             x: imageItem.bounds.x,
             y: imageItem.bounds.y,
             width: imageItem.bounds.width,
@@ -298,17 +356,24 @@ export default class Driftory {
                 this._startComic();
               }
             },
-            tileSource: {
-              type: 'legacy-image-pyramid',
-              levels: [
-                {
-                  url: item.url,
-                  width: item.width,
-                  height: item.height
-                }
-              ]
-            }
+            tileSource
           });
+
+          if (i > 0) {
+            const previousImageItem = this.imageItems[i - 1];
+
+            this.viewer?.addTiledImage({
+              preload: true,
+              opacity: 0,
+              x: previousImageItem.bounds.x,
+              y: previousImageItem.bounds.y,
+              width: previousImageItem.bounds.width,
+              success: (event: any) => {
+                imageItem.preloadTiledImage = event.item as OpenSeadragon.TiledImage;
+              },
+              tileSource
+            });
+          }
         });
 
         this.frames.forEach((frame, frameIndex) => {
@@ -355,9 +420,10 @@ export default class Driftory {
   closeComic() {
     this.imageItems = [];
     this.frames = [];
+    this.framePath = [];
     this.frameIndex = -1;
     this.frameIndexHint = -1;
-    this.lastScrollTime = 0;
+    this.maxScrollValue = 0;
     this.comicLoaded = false;
     this.viewer?.close();
   }
@@ -376,9 +442,106 @@ export default class Driftory {
   _updateImageVisibility() {
     this.imageItems.forEach((imageItem) => {
       if (imageItem.hideUntilFrame !== undefined) {
-        imageItem.tiledImage?.setOpacity(this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
+        imageItem.targetOpacity = this.frameIndex < imageItem.hideUntilFrame ? 0 : 1;
       }
     });
+  }
+
+  // ----------
+  _animationFrame() {
+    requestAnimationFrame(this._animationFrame);
+
+    this.imageItems.forEach((imageItem) => {
+      const tiledImage = imageItem.tiledImage;
+      const preloadTiledImage = imageItem.preloadTiledImage;
+      if (
+        tiledImage &&
+        (tiledImage.getFullyLoaded() || (preloadTiledImage && preloadTiledImage.getFullyLoaded()))
+      ) {
+        const opacity = tiledImage.getOpacity();
+        if (opacity !== imageItem.targetOpacity) {
+          tiledImage.setOpacity(
+            clamp(opacity + sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1)
+          );
+        }
+      }
+    });
+
+    if (this.scroll) {
+      const epsilon = 0.00001;
+      let amount = Math.abs(this.scroll.target - this.scroll.value) * 0.1;
+      amount = Math.max(amount, epsilon);
+      amount = Math.min(amount, scrollQuantum) * this.scroll.direction;
+      this.scroll.value += amount;
+
+      if (this.scroll.direction > 0) {
+        if (this.scroll.value >= this.scroll.target - epsilon) {
+          this.scroll.value = this.scroll.target;
+        }
+      } else {
+        if (this.scroll.value <= this.scroll.target + epsilon) {
+          this.scroll.value = this.scroll.target;
+        }
+      }
+
+      this._updateForScrollValue();
+
+      const timeDiff = Date.now() - this.scroll.time;
+      // console.log(timeDiff, this.scroll.value, this.scroll.target);
+      if (this.scroll.value === this.scroll.target && timeDiff > 20) {
+        delete this.scroll;
+      }
+    }
+  }
+
+  // ----------
+  _updateForScrollValue() {
+    if (this.viewer && this.scroll) {
+      for (let i = 0; i < this.framePath.length - 1; i++) {
+        const aIndex = i;
+        const bIndex = i + 1;
+        const a = this.framePath[aIndex];
+        const b = this.framePath[bIndex];
+        if (this.scroll.value >= a.scroll && this.scroll.value <= b.scroll) {
+          let newFrameIndex;
+          if (this.scroll.direction > 0) {
+            newFrameIndex = this.scroll.value === a.scroll ? aIndex : bIndex;
+          } else {
+            newFrameIndex = this.scroll.value === b.scroll ? bIndex : aIndex;
+          }
+
+          this.frameIndexHint = newFrameIndex;
+
+          const factor = mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
+
+          let earlierBounds, laterBounds;
+          if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
+            if (this.scroll.direction > 0) {
+              earlierBounds = this.scroll.startBounds;
+              laterBounds = b.bounds;
+            } else {
+              earlierBounds = a.bounds;
+              laterBounds = this.scroll.startBounds;
+            }
+          } else {
+            this.scroll.startIndex = -1;
+            earlierBounds = a.bounds;
+            laterBounds = b.bounds;
+          }
+
+          const newBounds = new OpenSeadragon!.Rect(
+            mapLinear(factor, 0, 1, earlierBounds.x, laterBounds.x),
+            mapLinear(factor, 0, 1, earlierBounds.y, laterBounds.y),
+            mapLinear(factor, 0, 1, earlierBounds.width, laterBounds.width),
+            mapLinear(factor, 0, 1, earlierBounds.height, laterBounds.height)
+          );
+
+          this.viewer.viewport.fitBounds(newBounds, true);
+
+          break;
+        }
+      }
+    }
   }
 
   /** Determine if the frame navigation controls are currently able to be used to navigate */
@@ -396,20 +559,25 @@ export default class Driftory {
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
       var frame = this.frames[index];
-      var bufferFactor = 0.2;
       if (frame) {
         this.frameIndexHint = index;
 
-        var box = frame.bounds.clone();
-
-        box.width *= 1 + bufferFactor;
-        box.height *= 1 + bufferFactor;
-        box.x -= frame.bounds.width * bufferFactor * 0.5;
-        box.y -= frame.bounds.height * bufferFactor * 0.5;
-
+        var box = this._getBoundsForFrame(frame);
         this.viewer?.viewport.fitBounds(box);
       }
     }
+  }
+
+  // ----------
+  _getBoundsForFrame(frame: Frame) {
+    var bufferFactor = 0.2;
+    var box = frame.bounds.clone();
+
+    box.width *= 1 + bufferFactor;
+    box.height *= 1 + bufferFactor;
+    box.x -= frame.bounds.width * bufferFactor * 0.5;
+    box.y -= frame.bounds.height * bufferFactor * 0.5;
+    return box;
   }
 
   /** Get the currently active frame index. This will be whatever frame is in the middle of the
@@ -431,12 +599,13 @@ export default class Driftory {
         const bounds = frame.bounds;
 
         if (bounds.containsPoint(viewportCenter)) {
-          if (this.frameIndexHint === i) {
-            bestIndex = i;
-            break;
+          let distance;
+          if (this.frameIndexHint === -1) {
+            distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
+          } else {
+            distance = Math.abs(this.frameIndexHint - i);
           }
 
-          const distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
           if (distance < bestDistance) {
             bestDistance = distance;
             bestIndex = i;
