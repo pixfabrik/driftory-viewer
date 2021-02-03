@@ -446,7 +446,7 @@ export default class Driftory {
         }
       }
 
-      this._updateForScrollValue();
+      this._updateForScrollValue(this.scroll.direction);
 
       const timeDiff = Date.now() - this.scroll.time;
       // console.log(timeDiff, this.scrollValue, this.scroll.target);
@@ -457,12 +457,21 @@ export default class Driftory {
   }
 
   // ----------
-  _updateForScrollValue() {
+  _updateForScrollValue(direction: number) {
     if (this.viewer) {
       for (let i = 0; i < this.framePath.length - 1; i++) {
         const a = this.framePath[i];
         const b = this.framePath[i + 1];
         if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+          let newFrameIndex;
+          if (direction > 0) {
+            newFrameIndex = this.scrollValue === a.scroll ? i : i + 1;
+          } else {
+            newFrameIndex = this.scrollValue === b.scroll ? i + 1 : i;
+          }
+
+          this.frameIndexHint = newFrameIndex;
+
           const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
 
           const newBounds = new OpenSeadragon!.Rect(
@@ -535,12 +544,13 @@ export default class Driftory {
         const bounds = frame.bounds;
 
         if (bounds.containsPoint(viewportCenter)) {
-          if (this.frameIndexHint === i) {
-            bestIndex = i;
-            break;
+          let distance;
+          if (this.frameIndexHint === -1) {
+            distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
+          } else {
+            distance = Math.abs(this.frameIndexHint - i);
           }
 
-          const distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
           if (distance < bestDistance) {
             bestDistance = distance;
             bestIndex = i;

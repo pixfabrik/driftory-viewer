@@ -1053,7 +1053,7 @@ var Driftory = /** @class */ (function () {
                     this.scrollValue = this.scroll.target;
                 }
             }
-            this._updateForScrollValue();
+            this._updateForScrollValue(this.scroll.direction);
             var timeDiff = Date.now() - this.scroll.time;
             // console.log(timeDiff, this.scrollValue, this.scroll.target);
             if (this.scrollValue === this.scroll.target && timeDiff > 20) {
@@ -1062,12 +1062,20 @@ var Driftory = /** @class */ (function () {
         }
     };
     // ----------
-    Driftory.prototype._updateForScrollValue = function () {
+    Driftory.prototype._updateForScrollValue = function (direction) {
         if (this.viewer) {
             for (var i = 0; i < this.framePath.length - 1; i++) {
                 var a = this.framePath[i];
                 var b = this.framePath[i + 1];
                 if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+                    var newFrameIndex = void 0;
+                    if (direction > 0) {
+                        newFrameIndex = this.scrollValue === a.scroll ? i : i + 1;
+                    }
+                    else {
+                        newFrameIndex = this.scrollValue === b.scroll ? i + 1 : i;
+                    }
+                    this.frameIndexHint = newFrameIndex;
                     var factor = util_1.mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
                     var newBounds = new OpenSeadragon.Rect(util_1.mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x), util_1.mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y), util_1.mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width), util_1.mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height));
                     this.viewer.viewport.fitBounds(newBounds, true);
@@ -1124,11 +1132,13 @@ var Driftory = /** @class */ (function () {
                 var frame = this.frames[i];
                 var bounds = frame.bounds;
                 if (bounds.containsPoint(viewportCenter)) {
-                    if (this.frameIndexHint === i) {
-                        bestIndex = i;
-                        break;
+                    var distance = void 0;
+                    if (this.frameIndexHint === -1) {
+                        distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
                     }
-                    var distance = viewportCenter.squaredDistanceTo(bounds.getCenter());
+                    else {
+                        distance = Math.abs(this.frameIndexHint - i);
+                    }
                     if (distance < bestDistance) {
                         bestDistance = distance;
                         bestIndex = i;
