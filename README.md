@@ -1,7 +1,5 @@
 # Driftory Viewer
 
-Pre-alpha!
-
 ## Demo
 
 https://pixfabrik.com/driftory-viewer/
