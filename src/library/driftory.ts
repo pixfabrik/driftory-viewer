@@ -217,15 +217,22 @@ export default class Driftory {
         if (!this.scroll || Math.abs(normalized.spinY) > 0.9) {
           const direction = normalized.spinY < 0 ? -1 : 1;
 
+          if (!this.scroll || this.scroll.direction !== direction) {
+            this.scrollValue = this.frameIndex;
+
+            this.scroll = {
+              startIndex: this.frameIndex,
+              startBounds: this.viewer?.viewport.getBounds(true)
+            };
+          }
+
           let target = this.scrollValue + normalized.spinY * 0.5;
           target = direction < 0 ? Math.floor(target) : Math.ceil(target);
           target = clamp(target, 0, this.maxScrollValue);
 
-          this.scroll = {
-            direction,
-            target,
-            time: Date.now()
-          };
+          this.scroll.direction = direction;
+          this.scroll.target = target;
+          this.scroll.time = Date.now();
         }
 
         // Returning false stops the browser from scrolling itself.
@@ -458,27 +465,44 @@ export default class Driftory {
 
   // ----------
   _updateForScrollValue(direction: number) {
-    if (this.viewer) {
+    if (this.viewer && this.scroll) {
       for (let i = 0; i < this.framePath.length - 1; i++) {
-        const a = this.framePath[i];
-        const b = this.framePath[i + 1];
+        const aIndex = i;
+        const bIndex = i + 1;
+        const a = this.framePath[aIndex];
+        const b = this.framePath[bIndex];
         if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
           let newFrameIndex;
           if (direction > 0) {
-            newFrameIndex = this.scrollValue === a.scroll ? i : i + 1;
+            newFrameIndex = this.scrollValue === a.scroll ? aIndex : bIndex;
           } else {
-            newFrameIndex = this.scrollValue === b.scroll ? i + 1 : i;
+            newFrameIndex = this.scrollValue === b.scroll ? bIndex : aIndex;
           }
 
           this.frameIndexHint = newFrameIndex;
 
           const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
 
+          let earlierBounds, laterBounds;
+          if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
+            if (direction > 0) {
+              earlierBounds = this.scroll.startBounds;
+              laterBounds = b.bounds;
+            } else {
+              earlierBounds = a.bounds;
+              laterBounds = this.scroll.startBounds;
+            }
+          } else {
+            this.scroll.startIndex = -1;
+            earlierBounds = a.bounds;
+            laterBounds = b.bounds;
+          }
+
           const newBounds = new OpenSeadragon!.Rect(
-            mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x),
-            mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y),
-            mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width),
-            mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height)
+            mapLinear(factor, 0, 1, earlierBounds.x, laterBounds.x),
+            mapLinear(factor, 0, 1, earlierBounds.y, laterBounds.y),
+            mapLinear(factor, 0, 1, earlierBounds.width, laterBounds.width),
+            mapLinear(factor, 0, 1, earlierBounds.height, laterBounds.height)
           );
 
           this.viewer.viewport.fitBounds(newBounds, true);

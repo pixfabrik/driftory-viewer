@@ -851,7 +851,7 @@ var Driftory = /** @class */ (function () {
             });
             var originalScrollHandler_1 = this.viewer.innerTracker.scrollHandler;
             this.viewer.innerTracker.scrollHandler = function (event) {
-                var _a;
+                var _a, _b;
                 if (!_this.navEnabled) {
                     // Returning false stops the browser from scrolling itself.
                     return false;
@@ -864,14 +864,19 @@ var Driftory = /** @class */ (function () {
                 var normalized = normalize_wheel_1.default(event.originalEvent);
                 if (!_this.scroll || Math.abs(normalized.spinY) > 0.9) {
                     var direction = normalized.spinY < 0 ? -1 : 1;
+                    if (!_this.scroll || _this.scroll.direction !== direction) {
+                        _this.scrollValue = _this.frameIndex;
+                        _this.scroll = {
+                            startIndex: _this.frameIndex,
+                            startBounds: (_b = _this.viewer) === null || _b === void 0 ? void 0 : _b.viewport.getBounds(true)
+                        };
+                    }
                     var target = _this.scrollValue + normalized.spinY * 0.5;
                     target = direction < 0 ? Math.floor(target) : Math.ceil(target);
                     target = util_1.clamp(target, 0, _this.maxScrollValue);
-                    _this.scroll = {
-                        direction: direction,
-                        target: target,
-                        time: Date.now()
-                    };
+                    _this.scroll.direction = direction;
+                    _this.scroll.target = target;
+                    _this.scroll.time = Date.now();
                 }
                 // Returning false stops the browser from scrolling itself.
                 return false;
@@ -1063,21 +1068,39 @@ var Driftory = /** @class */ (function () {
     };
     // ----------
     Driftory.prototype._updateForScrollValue = function (direction) {
-        if (this.viewer) {
+        if (this.viewer && this.scroll) {
             for (var i = 0; i < this.framePath.length - 1; i++) {
-                var a = this.framePath[i];
-                var b = this.framePath[i + 1];
+                var aIndex = i;
+                var bIndex = i + 1;
+                var a = this.framePath[aIndex];
+                var b = this.framePath[bIndex];
                 if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
                     var newFrameIndex = void 0;
                     if (direction > 0) {
-                        newFrameIndex = this.scrollValue === a.scroll ? i : i + 1;
+                        newFrameIndex = this.scrollValue === a.scroll ? aIndex : bIndex;
                     }
                     else {
-                        newFrameIndex = this.scrollValue === b.scroll ? i + 1 : i;
+                        newFrameIndex = this.scrollValue === b.scroll ? bIndex : aIndex;
                     }
                     this.frameIndexHint = newFrameIndex;
                     var factor = util_1.mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
-                    var newBounds = new OpenSeadragon.Rect(util_1.mapLinear(factor, 0, 1, a.bounds.x, b.bounds.x), util_1.mapLinear(factor, 0, 1, a.bounds.y, b.bounds.y), util_1.mapLinear(factor, 0, 1, a.bounds.width, b.bounds.width), util_1.mapLinear(factor, 0, 1, a.bounds.height, b.bounds.height));
+                    var earlierBounds = void 0, laterBounds = void 0;
+                    if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
+                        if (direction > 0) {
+                            earlierBounds = this.scroll.startBounds;
+                            laterBounds = b.bounds;
+                        }
+                        else {
+                            earlierBounds = a.bounds;
+                            laterBounds = this.scroll.startBounds;
+                        }
+                    }
+                    else {
+                        this.scroll.startIndex = -1;
+                        earlierBounds = a.bounds;
+                        laterBounds = b.bounds;
+                    }
+                    var newBounds = new OpenSeadragon.Rect(util_1.mapLinear(factor, 0, 1, earlierBounds.x, laterBounds.x), util_1.mapLinear(factor, 0, 1, earlierBounds.y, laterBounds.y), util_1.mapLinear(factor, 0, 1, earlierBounds.width, laterBounds.width), util_1.mapLinear(factor, 0, 1, earlierBounds.height, laterBounds.height));
                     this.viewer.viewport.fitBounds(newBounds, true);
                     break;
                 }
