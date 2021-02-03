@@ -1,5 +1,5 @@
 import loadJs from '@dan503/load-js';
-import { mapLinear, clamp } from './util';
+import { mapLinear, clamp, sign } from './util';
 import { Comic } from './Comic.types';
 import { OpenSeadragonType, ViewerType } from './openseadragon.types';
 import normalizeWheel from 'normalize-wheel';
@@ -41,6 +41,7 @@ interface FrameInfo {
 interface ImageItem {
   url: string;
   bounds: OpenSeadragon.Rect;
+  targetOpacity: number;
   hideUntilFrame?: number;
   tiledImage?: OpenSeadragon.TiledImage;
 }
@@ -323,6 +324,7 @@ export default class Driftory {
               item.width,
               item.height
             ),
+            targetOpacity: 1,
             hideUntilFrame: item.hideUntilFrame
           };
 
@@ -330,6 +332,7 @@ export default class Driftory {
 
           this.viewer?.addTiledImage({
             preload: true,
+            opacity: 0,
             x: imageItem.bounds.x,
             y: imageItem.bounds.y,
             width: imageItem.bounds.width,
@@ -420,7 +423,7 @@ export default class Driftory {
   _updateImageVisibility() {
     this.imageItems.forEach((imageItem) => {
       if (imageItem.hideUntilFrame !== undefined) {
-        imageItem.tiledImage?.setOpacity(this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
+        imageItem.targetOpacity = this.frameIndex < imageItem.hideUntilFrame ? 0 : 1;
       }
     });
   }
@@ -428,6 +431,18 @@ export default class Driftory {
   // ----------
   _animationFrame() {
     requestAnimationFrame(this._animationFrame);
+
+    this.imageItems.forEach((imageItem) => {
+      const tiledImage = imageItem.tiledImage;
+      if (tiledImage && tiledImage.getFullyLoaded()) {
+        const opacity = tiledImage.getOpacity();
+        if (opacity !== imageItem.targetOpacity) {
+          tiledImage.setOpacity(
+            clamp(opacity + sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1)
+          );
+        }
+      }
+    });
 
     if (this.scroll) {
       const epsilon = 0.00001;

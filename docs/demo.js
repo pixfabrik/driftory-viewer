@@ -944,11 +944,13 @@ var Driftory = /** @class */ (function () {
                     var imageItem = {
                         url: item.url,
                         bounds: new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height),
+                        targetOpacity: 1,
                         hideUntilFrame: item.hideUntilFrame
                     };
                     _this.imageItems.push(imageItem);
                     (_a = _this.viewer) === null || _a === void 0 ? void 0 : _a.addTiledImage({
                         preload: true,
+                        opacity: 0,
                         x: imageItem.bounds.x,
                         y: imageItem.bounds.y,
                         width: imageItem.bounds.width,
@@ -1027,15 +1029,23 @@ var Driftory = /** @class */ (function () {
     Driftory.prototype._updateImageVisibility = function () {
         var _this = this;
         this.imageItems.forEach(function (imageItem) {
-            var _a;
             if (imageItem.hideUntilFrame !== undefined) {
-                (_a = imageItem.tiledImage) === null || _a === void 0 ? void 0 : _a.setOpacity(_this.frameIndex < imageItem.hideUntilFrame ? 0 : 1);
+                imageItem.targetOpacity = _this.frameIndex < imageItem.hideUntilFrame ? 0 : 1;
             }
         });
     };
     // ----------
     Driftory.prototype._animationFrame = function () {
         requestAnimationFrame(this._animationFrame);
+        this.imageItems.forEach(function (imageItem) {
+            var tiledImage = imageItem.tiledImage;
+            if (tiledImage && tiledImage.getFullyLoaded()) {
+                var opacity = tiledImage.getOpacity();
+                if (opacity !== imageItem.targetOpacity) {
+                    tiledImage.setOpacity(util_1.clamp(opacity + util_1.sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1));
+                }
+            }
+        });
         if (this.scroll) {
             var epsilon = 0.00001;
             var amount = Math.abs(this.scroll.target - this.scroll.value) * 0.1;
@@ -1240,7 +1250,7 @@ exports.default = Driftory;
 },{"./util":9,"@dan503/load-js":1,"normalize-wheel":2}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clamp = exports.polarToVector = exports.vectorToPolar = exports.mapLinear = void 0;
+exports.sign = exports.clamp = exports.polarToVector = exports.vectorToPolar = exports.mapLinear = void 0;
 // ----------
 function mapLinear(x, a1, a2, b1, b2, clamp) {
     console.assert(a1 !== a2, 'a1 and a2 must be different');
@@ -1274,6 +1284,17 @@ function clamp(x, min, max) {
     return Math.max(min, Math.min(max, x));
 }
 exports.clamp = clamp;
+// ----------
+function sign(x) {
+    if (x < 0) {
+        return -1;
+    }
+    if (x > 0) {
+        return 1;
+    }
+    return 0;
+}
+exports.sign = sign;
 
 },{}]},{},[7])
 

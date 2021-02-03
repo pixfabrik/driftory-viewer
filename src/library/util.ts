@@ -38,3 +38,16 @@ export function polarToVector(radians: number, distance: number): { x: number; y
 export function clamp(x: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, x));
 }
+
+// ----------
+export function sign(x: number) {
+  if (x < 0) {
+    return -1;
+  }
+
+  if (x > 0) {
+    return 1;
+  }
+
+  return 0;
+}
