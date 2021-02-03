@@ -940,7 +940,7 @@ var Driftory = /** @class */ (function () {
                 });
                 // Get image items
                 comic.body.items.forEach(function (item, i) {
-                    var _a;
+                    var _a, _b;
                     var imageItem = {
                         url: item.url,
                         bounds: new OpenSeadragon.Rect(item.x - item.width / 2, item.y - item.height / 2, item.width, item.height),
@@ -948,6 +948,16 @@ var Driftory = /** @class */ (function () {
                         hideUntilFrame: item.hideUntilFrame
                     };
                     _this.imageItems.push(imageItem);
+                    var tileSource = {
+                        type: 'legacy-image-pyramid',
+                        levels: [
+                            {
+                                url: item.url,
+                                width: item.width,
+                                height: item.height
+                            }
+                        ]
+                    };
                     (_a = _this.viewer) === null || _a === void 0 ? void 0 : _a.addTiledImage({
                         preload: true,
                         opacity: 0,
@@ -961,17 +971,22 @@ var Driftory = /** @class */ (function () {
                                 _this._startComic();
                             }
                         },
-                        tileSource: {
-                            type: 'legacy-image-pyramid',
-                            levels: [
-                                {
-                                    url: item.url,
-                                    width: item.width,
-                                    height: item.height
-                                }
-                            ]
-                        }
+                        tileSource: tileSource
                     });
+                    if (i > 0) {
+                        var previousImageItem = _this.imageItems[i - 1];
+                        (_b = _this.viewer) === null || _b === void 0 ? void 0 : _b.addTiledImage({
+                            preload: true,
+                            opacity: 0,
+                            x: previousImageItem.bounds.x,
+                            y: previousImageItem.bounds.y,
+                            width: previousImageItem.bounds.width,
+                            success: function (event) {
+                                imageItem.preloadTiledImage = event.item;
+                            },
+                            tileSource: tileSource
+                        });
+                    }
                 });
                 _this.frames.forEach(function (frame, frameIndex) {
                     var frameArea = frame.bounds.width * frame.bounds.height;
@@ -1039,7 +1054,9 @@ var Driftory = /** @class */ (function () {
         requestAnimationFrame(this._animationFrame);
         this.imageItems.forEach(function (imageItem) {
             var tiledImage = imageItem.tiledImage;
-            if (tiledImage && tiledImage.getFullyLoaded()) {
+            var preloadTiledImage = imageItem.preloadTiledImage;
+            if (tiledImage &&
+                (tiledImage.getFullyLoaded() || (preloadTiledImage && preloadTiledImage.getFullyLoaded()))) {
                 var opacity = tiledImage.getOpacity();
                 if (opacity !== imageItem.targetOpacity) {
                     tiledImage.setOpacity(util_1.clamp(opacity + util_1.sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1));

@@ -44,6 +44,7 @@ interface ImageItem {
   targetOpacity: number;
   hideUntilFrame?: number;
   tiledImage?: OpenSeadragon.TiledImage;
+  preloadTiledImage?: OpenSeadragon.TiledImage;
 }
 
 // Used internally
@@ -330,6 +331,17 @@ export default class Driftory {
 
           this.imageItems.push(imageItem);
 
+          const tileSource = {
+            type: 'legacy-image-pyramid',
+            levels: [
+              {
+                url: item.url,
+                width: item.width,
+                height: item.height
+              }
+            ]
+          };
+
           this.viewer?.addTiledImage({
             preload: true,
             opacity: 0,
@@ -344,17 +356,24 @@ export default class Driftory {
                 this._startComic();
               }
             },
-            tileSource: {
-              type: 'legacy-image-pyramid',
-              levels: [
-                {
-                  url: item.url,
-                  width: item.width,
-                  height: item.height
-                }
-              ]
-            }
+            tileSource
           });
+
+          if (i > 0) {
+            const previousImageItem = this.imageItems[i - 1];
+
+            this.viewer?.addTiledImage({
+              preload: true,
+              opacity: 0,
+              x: previousImageItem.bounds.x,
+              y: previousImageItem.bounds.y,
+              width: previousImageItem.bounds.width,
+              success: (event: any) => {
+                imageItem.preloadTiledImage = event.item as OpenSeadragon.TiledImage;
+              },
+              tileSource
+            });
+          }
         });
 
         this.frames.forEach((frame, frameIndex) => {
@@ -434,7 +453,11 @@ export default class Driftory {
 
     this.imageItems.forEach((imageItem) => {
       const tiledImage = imageItem.tiledImage;
-      if (tiledImage && tiledImage.getFullyLoaded()) {
+      const preloadTiledImage = imageItem.preloadTiledImage;
+      if (
+        tiledImage &&
+        (tiledImage.getFullyLoaded() || (preloadTiledImage && preloadTiledImage.getFullyLoaded()))
+      ) {
         const opacity = tiledImage.getOpacity();
         if (opacity !== imageItem.targetOpacity) {
           tiledImage.setOpacity(
