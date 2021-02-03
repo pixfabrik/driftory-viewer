@@ -766,10 +766,7 @@ var Driftory = /** @class */ (function () {
         this.framePath = [];
         this.frameIndex = -1;
         this.frameIndexHint = -1;
-        this.scrollValue = 0;
         this.maxScrollValue = 0;
-        this.lastScrollTime = 0;
-        this.scrollDelay = 2000;
         this.navEnabled = true;
         this.comicLoaded = false;
         this.scroll = null;
@@ -865,13 +862,13 @@ var Driftory = /** @class */ (function () {
                 if (!_this.scroll || Math.abs(normalized.spinY) > 0.9) {
                     var direction = normalized.spinY < 0 ? -1 : 1;
                     if (!_this.scroll || _this.scroll.direction !== direction) {
-                        _this.scrollValue = _this.frameIndex;
                         _this.scroll = {
+                            value: _this.frameIndex,
                             startIndex: _this.frameIndex,
                             startBounds: (_b = _this.viewer) === null || _b === void 0 ? void 0 : _b.viewport.getBounds(true)
                         };
                     }
-                    var target = _this.scrollValue + normalized.spinY * 0.5;
+                    var target = _this.scroll.value + normalized.spinY * 0.5;
                     target = direction < 0 ? Math.floor(target) : Math.ceil(target);
                     target = util_1.clamp(target, 0, _this.maxScrollValue);
                     _this.scroll.direction = direction;
@@ -1014,16 +1011,13 @@ var Driftory = /** @class */ (function () {
         this.framePath = [];
         this.frameIndex = -1;
         this.frameIndexHint = -1;
-        this.scrollValue = 0;
         this.maxScrollValue = 0;
-        this.lastScrollTime = 0;
         this.comicLoaded = false;
         (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.close();
     };
     // ----------
     Driftory.prototype._startComic = function () {
         this.comicLoaded = true;
-        this.scrollValue = 0;
         this.goToFrame(0);
         if (this.onComicLoad) {
             this.onComicLoad({});
@@ -1044,49 +1038,49 @@ var Driftory = /** @class */ (function () {
         requestAnimationFrame(this._animationFrame);
         if (this.scroll) {
             var epsilon = 0.00001;
-            var amount = Math.abs(this.scroll.target - this.scrollValue) * 0.1;
+            var amount = Math.abs(this.scroll.target - this.scroll.value) * 0.1;
             amount = Math.max(amount, epsilon);
             amount = Math.min(amount, scrollQuantum) * this.scroll.direction;
-            this.scrollValue += amount;
+            this.scroll.value += amount;
             if (this.scroll.direction > 0) {
-                if (this.scrollValue >= this.scroll.target - epsilon) {
-                    this.scrollValue = this.scroll.target;
+                if (this.scroll.value >= this.scroll.target - epsilon) {
+                    this.scroll.value = this.scroll.target;
                 }
             }
             else {
-                if (this.scrollValue <= this.scroll.target + epsilon) {
-                    this.scrollValue = this.scroll.target;
+                if (this.scroll.value <= this.scroll.target + epsilon) {
+                    this.scroll.value = this.scroll.target;
                 }
             }
-            this._updateForScrollValue(this.scroll.direction);
+            this._updateForScrollValue();
             var timeDiff = Date.now() - this.scroll.time;
-            // console.log(timeDiff, this.scrollValue, this.scroll.target);
-            if (this.scrollValue === this.scroll.target && timeDiff > 20) {
+            // console.log(timeDiff, this.scroll.value, this.scroll.target);
+            if (this.scroll.value === this.scroll.target && timeDiff > 20) {
                 delete this.scroll;
             }
         }
     };
     // ----------
-    Driftory.prototype._updateForScrollValue = function (direction) {
+    Driftory.prototype._updateForScrollValue = function () {
         if (this.viewer && this.scroll) {
             for (var i = 0; i < this.framePath.length - 1; i++) {
                 var aIndex = i;
                 var bIndex = i + 1;
                 var a = this.framePath[aIndex];
                 var b = this.framePath[bIndex];
-                if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+                if (this.scroll.value >= a.scroll && this.scroll.value <= b.scroll) {
                     var newFrameIndex = void 0;
-                    if (direction > 0) {
-                        newFrameIndex = this.scrollValue === a.scroll ? aIndex : bIndex;
+                    if (this.scroll.direction > 0) {
+                        newFrameIndex = this.scroll.value === a.scroll ? aIndex : bIndex;
                     }
                     else {
-                        newFrameIndex = this.scrollValue === b.scroll ? bIndex : aIndex;
+                        newFrameIndex = this.scroll.value === b.scroll ? bIndex : aIndex;
                     }
                     this.frameIndexHint = newFrameIndex;
-                    var factor = util_1.mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
+                    var factor = util_1.mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
                     var earlierBounds = void 0, laterBounds = void 0;
                     if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
-                        if (direction > 0) {
+                        if (this.scroll.direction > 0) {
                             earlierBounds = this.scroll.startBounds;
                             laterBounds = b.bounds;
                         }

@@ -103,10 +103,7 @@ export default class Driftory {
   framePath: Array<FramePathItem> = [];
   frameIndex: number = -1;
   frameIndexHint: number = -1;
-  scrollValue: number = 0;
   maxScrollValue: number = 0;
-  lastScrollTime: number = 0;
-  scrollDelay: number = 2000;
   viewer?: ViewerType;
   navEnabled: boolean = true;
   comicLoaded: boolean = false;
@@ -218,15 +215,14 @@ export default class Driftory {
           const direction = normalized.spinY < 0 ? -1 : 1;
 
           if (!this.scroll || this.scroll.direction !== direction) {
-            this.scrollValue = this.frameIndex;
-
             this.scroll = {
+              value: this.frameIndex,
               startIndex: this.frameIndex,
               startBounds: this.viewer?.viewport.getBounds(true)
             };
           }
 
-          let target = this.scrollValue + normalized.spinY * 0.5;
+          let target = this.scroll.value + normalized.spinY * 0.5;
           target = direction < 0 ? Math.floor(target) : Math.ceil(target);
           target = clamp(target, 0, this.maxScrollValue);
 
@@ -405,9 +401,7 @@ export default class Driftory {
     this.framePath = [];
     this.frameIndex = -1;
     this.frameIndexHint = -1;
-    this.scrollValue = 0;
     this.maxScrollValue = 0;
-    this.lastScrollTime = 0;
     this.comicLoaded = false;
     this.viewer?.close();
   }
@@ -415,7 +409,6 @@ export default class Driftory {
   // ----------
   _startComic() {
     this.comicLoaded = true;
-    this.scrollValue = 0;
     this.goToFrame(0);
 
     if (this.onComicLoad) {
@@ -438,54 +431,54 @@ export default class Driftory {
 
     if (this.scroll) {
       const epsilon = 0.00001;
-      let amount = Math.abs(this.scroll.target - this.scrollValue) * 0.1;
+      let amount = Math.abs(this.scroll.target - this.scroll.value) * 0.1;
       amount = Math.max(amount, epsilon);
       amount = Math.min(amount, scrollQuantum) * this.scroll.direction;
-      this.scrollValue += amount;
+      this.scroll.value += amount;
 
       if (this.scroll.direction > 0) {
-        if (this.scrollValue >= this.scroll.target - epsilon) {
-          this.scrollValue = this.scroll.target;
+        if (this.scroll.value >= this.scroll.target - epsilon) {
+          this.scroll.value = this.scroll.target;
         }
       } else {
-        if (this.scrollValue <= this.scroll.target + epsilon) {
-          this.scrollValue = this.scroll.target;
+        if (this.scroll.value <= this.scroll.target + epsilon) {
+          this.scroll.value = this.scroll.target;
         }
       }
 
-      this._updateForScrollValue(this.scroll.direction);
+      this._updateForScrollValue();
 
       const timeDiff = Date.now() - this.scroll.time;
-      // console.log(timeDiff, this.scrollValue, this.scroll.target);
-      if (this.scrollValue === this.scroll.target && timeDiff > 20) {
+      // console.log(timeDiff, this.scroll.value, this.scroll.target);
+      if (this.scroll.value === this.scroll.target && timeDiff > 20) {
         delete this.scroll;
       }
     }
   }
 
   // ----------
-  _updateForScrollValue(direction: number) {
+  _updateForScrollValue() {
     if (this.viewer && this.scroll) {
       for (let i = 0; i < this.framePath.length - 1; i++) {
         const aIndex = i;
         const bIndex = i + 1;
         const a = this.framePath[aIndex];
         const b = this.framePath[bIndex];
-        if (this.scrollValue >= a.scroll && this.scrollValue <= b.scroll) {
+        if (this.scroll.value >= a.scroll && this.scroll.value <= b.scroll) {
           let newFrameIndex;
-          if (direction > 0) {
-            newFrameIndex = this.scrollValue === a.scroll ? aIndex : bIndex;
+          if (this.scroll.direction > 0) {
+            newFrameIndex = this.scroll.value === a.scroll ? aIndex : bIndex;
           } else {
-            newFrameIndex = this.scrollValue === b.scroll ? bIndex : aIndex;
+            newFrameIndex = this.scroll.value === b.scroll ? bIndex : aIndex;
           }
 
           this.frameIndexHint = newFrameIndex;
 
-          const factor = mapLinear(this.scrollValue, a.scroll, b.scroll, 0, 1);
+          const factor = mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
 
           let earlierBounds, laterBounds;
           if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
-            if (direction > 0) {
+            if (this.scroll.direction > 0) {
               earlierBounds = this.scroll.startBounds;
               laterBounds = b.bounds;
             } else {
