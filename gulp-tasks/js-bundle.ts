@@ -52,3 +52,14 @@ var tsNpmProject = TypeScript.createProject({
 task('js:npm-bundle', () => {
   return src('src/library/driftory.ts').pipe(tsNpmProject()).pipe(dest('dist'));
 });
+
+var tsNpmUtilProject = TypeScript.createProject({
+  target: 'es5',
+  module: 'commonjs',
+  declaration: true,
+  moduleResolution: 'node'
+});
+
+task('js:npm-bundle-util', () => {
+  return src('src/library/util.ts').pipe(tsNpmUtilProject()).pipe(dest('dist'));
+});
