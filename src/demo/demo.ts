@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameImage = frame.images[0];
         const image = document.createElement('img');
         image.src = frameImage.url;
-        imageList.appendChild(image);
+        imageList?.appendChild(image);
       }
     }
   });
