@@ -735,13 +735,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 var frameImage = frame.images[0];
                 var image = document.createElement('img');
                 image.src = frameImage.url;
-                imageList.appendChild(image);
+                imageList === null || imageList === void 0 ? void 0 : imageList.appendChild(image);
             }
         }
     });
     openComic();
 });
-
 },{"../library/driftory":8}],8:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -1263,7 +1262,6 @@ var Driftory = /** @class */ (function () {
     return Driftory;
 }());
 exports.default = Driftory;
-
 },{"./util":9,"@dan503/load-js":1,"normalize-wheel":2}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1312,7 +1310,6 @@ function sign(x) {
     return 0;
 }
 exports.sign = sign;
-
 },{}]},{},[7])
 
 //# sourceMappingURL=demo.js.map
