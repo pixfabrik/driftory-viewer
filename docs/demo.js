@@ -681,6 +681,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     driftory = new driftory_1.default({
         container: container,
+        fadeSeconds: 0.5,
         onComicLoad: function () {
             console.log('loaded!');
         },
@@ -771,7 +772,9 @@ var Driftory = /** @class */ (function () {
         this.navEnabled = true;
         this.comicLoaded = false;
         this.scroll = null;
+        this.lastAnimationTime = Date.now();
         this.container = args.container;
+        this.fadeSeconds = args.fadeSeconds === undefined ? 0.5 : args.fadeSeconds;
         this.onFrameChange = args.onFrameChange || function () { };
         this.onComicLoad = args.onComicLoad || function () { };
         this.onNoNext = args.onNoNext || function () { };
@@ -1054,7 +1057,11 @@ var Driftory = /** @class */ (function () {
     };
     // ----------
     Driftory.prototype._animationFrame = function () {
+        var _this = this;
         requestAnimationFrame(this._animationFrame);
+        var now = Date.now();
+        var timeSlice = now - this.lastAnimationTime;
+        this.lastAnimationTime = now;
         this.imageItems.forEach(function (imageItem) {
             var tiledImage = imageItem.tiledImage;
             var preloadTiledImage = imageItem.preloadTiledImage;
@@ -1062,7 +1069,8 @@ var Driftory = /** @class */ (function () {
                 (tiledImage.getFullyLoaded() || (preloadTiledImage && preloadTiledImage.getFullyLoaded()))) {
                 var opacity = tiledImage.getOpacity();
                 if (opacity !== imageItem.targetOpacity) {
-                    tiledImage.setOpacity(util_1.clamp(opacity + util_1.sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1));
+                    var factor = _this.fadeSeconds ? timeSlice / (_this.fadeSeconds * 1000) : 1;
+                    tiledImage.setOpacity(util_1.clamp(opacity + util_1.sign(imageItem.targetOpacity - opacity) * factor, 0, 1));
                 }
             }
         });
@@ -1142,6 +1150,14 @@ var Driftory = /** @class */ (function () {
         var _a;
         this.navEnabled = flag;
         (_a = this.viewer) === null || _a === void 0 ? void 0 : _a.setMouseNavEnabled(flag);
+    };
+    /** Get how many seconds it takes to fade an image on */
+    Driftory.prototype.getFadeSeconds = function () {
+        return this.fadeSeconds;
+    };
+    /** Set how many seconds it takes to fade an image on */
+    Driftory.prototype.setFadeSeconds = function (fadeSeconds) {
+        this.fadeSeconds = fadeSeconds;
     };
     /** Navigate to a specific frame via its index number */
     Driftory.prototype.goToFrame = function (index) {

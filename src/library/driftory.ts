@@ -76,6 +76,8 @@ type OnNoPrevious = (params: {}) => void;
 export interface DriftoryArguments {
   /** The HTML DOM element that the Driftory Comic will be rendered in.  */
   container: Container;
+  /** How many seconds it takes to fade new images on; default: 0.5 */
+  fadeSeconds?: number;
   /**
    * This library has a dependency on the [OpenSeadragon](https://openseadragon.github.io/) library.
    *
@@ -101,6 +103,7 @@ const scrollQuantum = 0.05;
 
 export default class Driftory {
   container: Container;
+  fadeSeconds: number;
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
   onNoNext: OnNoNext;
@@ -115,10 +118,12 @@ export default class Driftory {
   navEnabled: boolean = true;
   comicLoaded: boolean = false;
   scroll: any = null;
+  lastAnimationTime: number = Date.now();
 
   // ----------
   constructor(args: DriftoryArguments) {
     this.container = args.container;
+    this.fadeSeconds = args.fadeSeconds === undefined ? 0.5 : args.fadeSeconds;
     this.onFrameChange = args.onFrameChange || function () {};
     this.onComicLoad = args.onComicLoad || function () {};
     this.onNoNext = args.onNoNext || function () {};
@@ -464,6 +469,9 @@ export default class Driftory {
   // ----------
   _animationFrame() {
     requestAnimationFrame(this._animationFrame);
+    const now = Date.now();
+    const timeSlice = now - this.lastAnimationTime;
+    this.lastAnimationTime = now;
 
     this.imageItems.forEach((imageItem) => {
       const tiledImage = imageItem.tiledImage;
@@ -474,8 +482,9 @@ export default class Driftory {
       ) {
         const opacity = tiledImage.getOpacity();
         if (opacity !== imageItem.targetOpacity) {
+          const factor = this.fadeSeconds ? timeSlice / (this.fadeSeconds * 1000) : 1;
           tiledImage.setOpacity(
-            clamp(opacity + sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1)
+            clamp(opacity + sign(imageItem.targetOpacity - opacity) * factor, 0, 1)
           );
         }
       }
@@ -570,6 +579,16 @@ export default class Driftory {
   setNavEnabled(flag: boolean) {
     this.navEnabled = flag;
     this.viewer?.setMouseNavEnabled(flag);
+  }
+
+  /** Get how many seconds it takes to fade an image on */
+  getFadeSeconds() {
+    return this.fadeSeconds;
+  }
+
+  /** Set how many seconds it takes to fade an image on */
+  setFadeSeconds(fadeSeconds: number) {
+    this.fadeSeconds = fadeSeconds;
   }
 
   /** Navigate to a specific frame via its index number */

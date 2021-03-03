@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   driftory = new Driftory({
     container,
+    fadeSeconds: 0.5,
     onComicLoad: () => {
       console.log('loaded!');
     },
