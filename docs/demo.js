@@ -934,12 +934,9 @@ var Driftory = /** @class */ (function () {
                 _this.framePath = [];
                 var scroll_1 = 0;
                 _this.frames.forEach(function (frame) {
-                    var point = frame.bounds.getCenter();
-                    var bounds = _this._getBoundsForFrame(frame);
                     _this.framePath.push({
                         scroll: scroll_1,
-                        point: point,
-                        bounds: bounds
+                        frame: frame
                     });
                     _this.maxScrollValue = scroll_1;
                     scroll_1++;
@@ -1111,21 +1108,23 @@ var Driftory = /** @class */ (function () {
                     }
                     this.frameIndexHint = newFrameIndex;
                     var factor = util_1.mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
+                    var aBounds = this._getBoundsForFrame(a.frame);
+                    var bBounds = this._getBoundsForFrame(b.frame);
                     var earlierBounds = void 0, laterBounds = void 0;
                     if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
                         if (this.scroll.direction > 0) {
                             earlierBounds = this.scroll.startBounds;
-                            laterBounds = b.bounds;
+                            laterBounds = bBounds;
                         }
                         else {
-                            earlierBounds = a.bounds;
+                            earlierBounds = aBounds;
                             laterBounds = this.scroll.startBounds;
                         }
                     }
                     else {
                         this.scroll.startIndex = -1;
-                        earlierBounds = a.bounds;
-                        laterBounds = b.bounds;
+                        earlierBounds = aBounds;
+                        laterBounds = bBounds;
                     }
                     var newBounds = new OpenSeadragon.Rect(util_1.mapLinear(factor, 0, 1, earlierBounds.x, laterBounds.x), util_1.mapLinear(factor, 0, 1, earlierBounds.y, laterBounds.y), util_1.mapLinear(factor, 0, 1, earlierBounds.width, laterBounds.width), util_1.mapLinear(factor, 0, 1, earlierBounds.height, laterBounds.height));
                     this.viewer.viewport.fitBounds(newBounds, true);

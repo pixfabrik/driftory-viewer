@@ -55,17 +55,17 @@ interface FrameImage {
 }
 
 // Used internally
-interface FramePathItem {
-  scroll: number;
-  point: OpenSeadragon.Point;
-  bounds: OpenSeadragon.Rect;
-}
-
 type Frame = {
   images: Array<FrameImage>;
   bounds: OpenSeadragon.Rect;
   keyBounds?: OpenSeadragon.Rect;
 };
+
+// Used internally
+interface FramePathItem {
+  scroll: number;
+  frame: Frame;
+}
 
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
@@ -320,13 +320,9 @@ export default class Driftory {
         this.framePath = [];
         let scroll = 0;
         this.frames.forEach((frame) => {
-          const point = frame.bounds.getCenter();
-          const bounds = this._getBoundsForFrame(frame);
-
           this.framePath.push({
             scroll,
-            point,
-            bounds
+            frame
           });
 
           this.maxScrollValue = scroll;
@@ -532,19 +528,22 @@ export default class Driftory {
 
           const factor = mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
 
+          const aBounds = this._getBoundsForFrame(a.frame);
+          const bBounds = this._getBoundsForFrame(b.frame);
+
           let earlierBounds, laterBounds;
           if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
             if (this.scroll.direction > 0) {
               earlierBounds = this.scroll.startBounds;
-              laterBounds = b.bounds;
+              laterBounds = bBounds;
             } else {
-              earlierBounds = a.bounds;
+              earlierBounds = aBounds;
               laterBounds = this.scroll.startBounds;
             }
           } else {
             this.scroll.startIndex = -1;
-            earlierBounds = a.bounds;
-            laterBounds = b.bounds;
+            earlierBounds = aBounds;
+            laterBounds = bBounds;
           }
 
           const newBounds = new OpenSeadragon!.Rect(
