@@ -61,7 +61,12 @@ interface FramePathItem {
   bounds: OpenSeadragon.Rect;
 }
 
-type Frame = { images: Array<FrameImage>; bounds: OpenSeadragon.Rect };
+type Frame = {
+  images: Array<FrameImage>;
+  bounds: OpenSeadragon.Rect;
+  keyBounds?: OpenSeadragon.Rect;
+};
+
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
@@ -274,15 +279,28 @@ export default class Driftory {
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
-            return {
+            const bounds = new OpenSeadragon!.Rect(
+              frame.x - frame.width / 2,
+              frame.y - frame.height / 2,
+              frame.width,
+              frame.height
+            );
+
+            const output: Frame = {
               images: [],
-              bounds: new OpenSeadragon!.Rect(
-                frame.x - frame.width / 2,
-                frame.y - frame.height / 2,
-                frame.width,
-                frame.height
-              )
+              bounds
             };
+
+            if (frame.keyArea) {
+              output.keyBounds = new OpenSeadragon!.Rect(
+                bounds.x + frame.keyArea.x - frame.keyArea.width / 2,
+                bounds.y + frame.keyArea.y - frame.keyArea.height / 2,
+                frame.keyArea.width,
+                frame.keyArea.height
+              );
+            }
+
+            return output;
           });
         } else {
           this.frames = comic.body.items.map((item) => {
@@ -570,6 +588,45 @@ export default class Driftory {
 
   // ----------
   _getBoundsForFrame(frame: Frame) {
+    if (frame.keyBounds && this.viewer) {
+      const { bounds, keyBounds } = frame;
+      let x, y, height;
+
+      const viewportBounds = this.viewer.viewport.getBounds();
+      const aspect = viewportBounds.width / viewportBounds.height;
+      let width = bounds.height * aspect;
+      if (width < bounds.width) {
+        height = bounds.height;
+      } else {
+        width = bounds.width;
+        height = bounds.width / aspect;
+      }
+
+      if (width < keyBounds.width) {
+        x = keyBounds.x;
+        width = keyBounds.width;
+      } else {
+        const widthExtra = bounds.width - keyBounds.width;
+        const leftExtra = keyBounds.x - bounds.x;
+        const leftFactor = leftExtra / widthExtra;
+        const newWidthExtra = width - keyBounds.width;
+        x = keyBounds.x - newWidthExtra * leftFactor;
+      }
+
+      if (height < keyBounds.height) {
+        y = keyBounds.y;
+        height = keyBounds.height;
+      } else {
+        const heightExtra = bounds.height - keyBounds.height;
+        const topExtra = keyBounds.y - bounds.y;
+        const topFactor = topExtra / heightExtra;
+        const newHeightExtra = height - keyBounds.height;
+        y = keyBounds.y - newHeightExtra * topFactor;
+      }
+
+      return new OpenSeadragon!.Rect(x, y, width, height);
+    }
+
     var bufferFactor = 0.2;
     var box = frame.bounds.clone();
 

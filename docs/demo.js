@@ -637,6 +637,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var driftory_1 = __importDefault(require("../library/driftory"));
 var comicNames = [
     // 'comic-hide-until-frame.json',
+    // 'comic-dual-frames.json',
     'comic.json',
     'comic-no-frames.json'
 ];
@@ -741,6 +742,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     openComic();
 });
+
 },{"../library/driftory":8}],8:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -909,10 +911,15 @@ var Driftory = /** @class */ (function () {
             if (_this.viewer) {
                 if (comic.body.frames) {
                     _this.frames = comic.body.frames.map(function (frame) {
-                        return {
+                        var bounds = new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height);
+                        var output = {
                             images: [],
-                            bounds: new OpenSeadragon.Rect(frame.x - frame.width / 2, frame.y - frame.height / 2, frame.width, frame.height)
+                            bounds: bounds
                         };
+                        if (frame.keyArea) {
+                            output.keyBounds = new OpenSeadragon.Rect(bounds.x + frame.keyArea.x - frame.keyArea.width / 2, bounds.y + frame.keyArea.y - frame.keyArea.height / 2, frame.keyArea.width, frame.keyArea.height);
+                        }
+                        return output;
                     });
                 }
                 else {
@@ -1151,6 +1158,43 @@ var Driftory = /** @class */ (function () {
     };
     // ----------
     Driftory.prototype._getBoundsForFrame = function (frame) {
+        if (frame.keyBounds && this.viewer) {
+            var bounds = frame.bounds, keyBounds = frame.keyBounds;
+            var x = void 0, y = void 0, height = void 0;
+            var viewportBounds = this.viewer.viewport.getBounds();
+            var aspect = viewportBounds.width / viewportBounds.height;
+            var width = bounds.height * aspect;
+            if (width < bounds.width) {
+                height = bounds.height;
+            }
+            else {
+                width = bounds.width;
+                height = bounds.width / aspect;
+            }
+            if (width < keyBounds.width) {
+                x = keyBounds.x;
+                width = keyBounds.width;
+            }
+            else {
+                var widthExtra = bounds.width - keyBounds.width;
+                var leftExtra = keyBounds.x - bounds.x;
+                var leftFactor = leftExtra / widthExtra;
+                var newWidthExtra = width - keyBounds.width;
+                x = keyBounds.x - newWidthExtra * leftFactor;
+            }
+            if (height < keyBounds.height) {
+                y = keyBounds.y;
+                height = keyBounds.height;
+            }
+            else {
+                var heightExtra = bounds.height - keyBounds.height;
+                var topExtra = keyBounds.y - bounds.y;
+                var topFactor = topExtra / heightExtra;
+                var newHeightExtra = height - keyBounds.height;
+                y = keyBounds.y - newHeightExtra * topFactor;
+            }
+            return new OpenSeadragon.Rect(x, y, width, height);
+        }
         var bufferFactor = 0.2;
         var box = frame.bounds.clone();
         box.width *= 1 + bufferFactor;
@@ -1262,6 +1306,7 @@ var Driftory = /** @class */ (function () {
     return Driftory;
 }());
 exports.default = Driftory;
+
 },{"./util":9,"@dan503/load-js":1,"normalize-wheel":2}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1310,6 +1355,7 @@ function sign(x) {
     return 0;
 }
 exports.sign = sign;
+
 },{}]},{},[7])
 
 //# sourceMappingURL=demo.js.map

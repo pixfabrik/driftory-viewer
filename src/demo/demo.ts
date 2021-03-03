@@ -2,6 +2,7 @@ import Driftory from '../library/driftory';
 
 const comicNames = [
   // 'comic-hide-until-frame.json',
+  // 'comic-dual-frames.json',
   'comic.json',
   'comic-no-frames.json'
 ];

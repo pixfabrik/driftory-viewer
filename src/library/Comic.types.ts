@@ -34,4 +34,10 @@ export interface Frame {
   y: number;
   width: number;
   height: number;
+  keyArea?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
