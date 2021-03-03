@@ -582,12 +582,12 @@ export default class Driftory {
   }
 
   /** Get how many seconds it takes to fade an image on */
-  getFadeSeconds() {
+  getFadeSeconds(): number {
     return this.fadeSeconds;
   }
 
   /** Set how many seconds it takes to fade an image on */
-  setFadeSeconds(fadeSeconds: number) {
+  setFadeSeconds(fadeSeconds: number): void {
     this.fadeSeconds = fadeSeconds;
   }
 
@@ -605,7 +605,7 @@ export default class Driftory {
   }
 
   // ----------
-  _getBoundsForFrame(frame: Frame) {
+  private _getBoundsForFrame(frame: Frame): OpenSeadragon.Rect {
     if (frame.keyBounds && this.viewer) {
       const { bounds, keyBounds } = frame;
       let x, y, height;
