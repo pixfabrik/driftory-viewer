@@ -55,13 +55,18 @@ interface FrameImage {
 }
 
 // Used internally
+type Frame = {
+  images: Array<FrameImage>;
+  bounds: OpenSeadragon.Rect;
+  keyBounds?: OpenSeadragon.Rect;
+};
+
+// Used internally
 interface FramePathItem {
   scroll: number;
-  point: OpenSeadragon.Point;
-  bounds: OpenSeadragon.Rect;
+  frame: Frame;
 }
 
-type Frame = { images: Array<FrameImage>; bounds: OpenSeadragon.Rect };
 type Container = HTMLElement;
 type OnFrameChange = (params: { frameIndex: number; isLastFrame: boolean }) => void;
 type OnComicLoad = (params: {}) => void;
@@ -71,6 +76,8 @@ type OnNoPrevious = (params: {}) => void;
 export interface DriftoryArguments {
   /** The HTML DOM element that the Driftory Comic will be rendered in.  */
   container: Container;
+  /** How many seconds it takes to fade new images on; default: 0.5 */
+  fadeSeconds?: number;
   /**
    * This library has a dependency on the [OpenSeadragon](https://openseadragon.github.io/) library.
    *
@@ -96,6 +103,7 @@ const scrollQuantum = 0.05;
 
 export default class Driftory {
   container: Container;
+  fadeSeconds: number;
   onFrameChange: OnFrameChange;
   onComicLoad: OnComicLoad;
   onNoNext: OnNoNext;
@@ -110,10 +118,12 @@ export default class Driftory {
   navEnabled: boolean = true;
   comicLoaded: boolean = false;
   scroll: any = null;
+  lastAnimationTime: number = Date.now();
 
   // ----------
   constructor(args: DriftoryArguments) {
     this.container = args.container;
+    this.fadeSeconds = args.fadeSeconds === undefined ? 0.5 : args.fadeSeconds;
     this.onFrameChange = args.onFrameChange || function () {};
     this.onComicLoad = args.onComicLoad || function () {};
     this.onNoNext = args.onNoNext || function () {};
@@ -274,15 +284,28 @@ export default class Driftory {
       if (this.viewer) {
         if (comic.body.frames) {
           this.frames = comic.body.frames.map((frame) => {
-            return {
+            const bounds = new OpenSeadragon!.Rect(
+              frame.x - frame.width / 2,
+              frame.y - frame.height / 2,
+              frame.width,
+              frame.height
+            );
+
+            const output: Frame = {
               images: [],
-              bounds: new OpenSeadragon!.Rect(
-                frame.x - frame.width / 2,
-                frame.y - frame.height / 2,
-                frame.width,
-                frame.height
-              )
+              bounds
             };
+
+            if (frame.keyArea) {
+              output.keyBounds = new OpenSeadragon!.Rect(
+                bounds.x + frame.keyArea.x - frame.keyArea.width / 2,
+                bounds.y + frame.keyArea.y - frame.keyArea.height / 2,
+                frame.keyArea.width,
+                frame.keyArea.height
+              );
+            }
+
+            return output;
           });
         } else {
           this.frames = comic.body.items.map((item) => {
@@ -302,13 +325,9 @@ export default class Driftory {
         this.framePath = [];
         let scroll = 0;
         this.frames.forEach((frame) => {
-          const point = frame.bounds.getCenter();
-          const bounds = this._getBoundsForFrame(frame);
-
           this.framePath.push({
             scroll,
-            point,
-            bounds
+            frame
           });
 
           this.maxScrollValue = scroll;
@@ -450,6 +469,9 @@ export default class Driftory {
   // ----------
   _animationFrame() {
     requestAnimationFrame(this._animationFrame);
+    const now = Date.now();
+    const timeSlice = now - this.lastAnimationTime;
+    this.lastAnimationTime = now;
 
     this.imageItems.forEach((imageItem) => {
       const tiledImage = imageItem.tiledImage;
@@ -460,8 +482,9 @@ export default class Driftory {
       ) {
         const opacity = tiledImage.getOpacity();
         if (opacity !== imageItem.targetOpacity) {
+          const factor = this.fadeSeconds ? timeSlice / (this.fadeSeconds * 1000) : 1;
           tiledImage.setOpacity(
-            clamp(opacity + sign(imageItem.targetOpacity - opacity) * 0.03, 0, 1)
+            clamp(opacity + sign(imageItem.targetOpacity - opacity) * factor, 0, 1)
           );
         }
       }
@@ -514,19 +537,22 @@ export default class Driftory {
 
           const factor = mapLinear(this.scroll.value, a.scroll, b.scroll, 0, 1);
 
+          const aBounds = this._getBoundsForFrame(a.frame);
+          const bBounds = this._getBoundsForFrame(b.frame);
+
           let earlierBounds, laterBounds;
           if (this.scroll.startIndex === aIndex || this.scroll.startIndex === bIndex) {
             if (this.scroll.direction > 0) {
               earlierBounds = this.scroll.startBounds;
-              laterBounds = b.bounds;
+              laterBounds = bBounds;
             } else {
-              earlierBounds = a.bounds;
+              earlierBounds = aBounds;
               laterBounds = this.scroll.startBounds;
             }
           } else {
             this.scroll.startIndex = -1;
-            earlierBounds = a.bounds;
-            laterBounds = b.bounds;
+            earlierBounds = aBounds;
+            laterBounds = bBounds;
           }
 
           const newBounds = new OpenSeadragon!.Rect(
@@ -555,6 +581,16 @@ export default class Driftory {
     this.viewer?.setMouseNavEnabled(flag);
   }
 
+  /** Get how many seconds it takes to fade an image on */
+  getFadeSeconds(): number {
+    return this.fadeSeconds;
+  }
+
+  /** Set how many seconds it takes to fade an image on */
+  setFadeSeconds(fadeSeconds: number): void {
+    this.fadeSeconds = fadeSeconds;
+  }
+
   /** Navigate to a specific frame via its index number */
   goToFrame(index: number) {
     if (this.getFrameIndex() !== index) {
@@ -569,7 +605,46 @@ export default class Driftory {
   }
 
   // ----------
-  _getBoundsForFrame(frame: Frame) {
+  private _getBoundsForFrame(frame: Frame): OpenSeadragon.Rect {
+    if (frame.keyBounds && this.viewer) {
+      const { bounds, keyBounds } = frame;
+      let x, y, height;
+
+      const viewportBounds = this.viewer.viewport.getBounds();
+      const aspect = viewportBounds.width / viewportBounds.height;
+      let width = bounds.height * aspect;
+      if (width < bounds.width) {
+        height = bounds.height;
+      } else {
+        width = bounds.width;
+        height = bounds.width / aspect;
+      }
+
+      if (width < keyBounds.width) {
+        x = keyBounds.x;
+        width = keyBounds.width;
+      } else {
+        const widthExtra = bounds.width - keyBounds.width;
+        const leftExtra = keyBounds.x - bounds.x;
+        const leftFactor = leftExtra / widthExtra;
+        const newWidthExtra = width - keyBounds.width;
+        x = keyBounds.x - newWidthExtra * leftFactor;
+      }
+
+      if (height < keyBounds.height) {
+        y = keyBounds.y;
+        height = keyBounds.height;
+      } else {
+        const heightExtra = bounds.height - keyBounds.height;
+        const topExtra = keyBounds.y - bounds.y;
+        const topFactor = topExtra / heightExtra;
+        const newHeightExtra = height - keyBounds.height;
+        y = keyBounds.y - newHeightExtra * topFactor;
+      }
+
+      return new OpenSeadragon!.Rect(x, y, width, height);
+    }
+
     var bufferFactor = 0.2;
     var box = frame.bounds.clone();
 
